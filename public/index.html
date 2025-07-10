@@ -1,0 +1,31 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dash Workplace Platform</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <!-- Header contains tabs for each module -->
+    <header id="app-header">
+        <nav>
+            <ul id="tabs">
+                <li data-module="messaging" class="active">Messaging</li>
+                <li data-module="crm">CRM</li>
+                <li data-module="projects">Projects</li>
+                <li data-module="timesheets">Timesheets</li>
+                <li data-module="leave">Leave</li>
+            </ul>
+        </nav>
+    </header>
+
+    <!-- Sidebar changes with selected module -->
+    <aside id="sidebar"></aside>
+
+    <!-- Main content area -->
+    <main id="main-content"></main>
+
+    <script src="app.js"></script>
+</body>
+</html>
