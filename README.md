@@ -26,6 +26,9 @@ Dash is an example enterprise web platform demonstrating several features:
    ```
 2. Serve the frontend using any static file server:
    ```bash
+   # If you run this from the repository root use the path to the
+   # `frontend` folder. When inside the `frontend` directory, simply run
+   # `npx serve` or `npx serve .` so the correct directory is served.
    npx serve frontend
    ```
    The JavaScript code assumes the API is available on `http://localhost:3000`.
