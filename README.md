@@ -1,2 +1,41 @@
-readme
 # Dash
+
+Dash is an example enterprise web platform demonstrating several features:
+
+- Instant messaging
+- Basic CRM and project/program management
+- Timesheets and leave requests
+- Role-based authentication with admin, team admin and user levels
+- Browser-based UI designed to be responsive and mobile friendly
+- Dockerised backend for easy deployment
+
+## Getting Started
+
+### Prerequisites
+- Node.js 18+
+- npm
+
+### Running locally
+
+1. Install dependencies for the backend:
+   ```bash
+   cd backend
+   npm install
+   npm run build
+   npm start
+   ```
+2. Serve the frontend using any static file server:
+   ```bash
+   npx serve frontend
+   ```
+
+### Docker
+
+To run the backend via Docker:
+
+```bash
+docker build -t dash-backend ./backend
+docker run -p 3000:3000 dash-backend
+```
+
+The frontend can be hosted separately or served by any static web server.
