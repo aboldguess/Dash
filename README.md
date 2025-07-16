@@ -28,6 +28,9 @@ Dash is an example enterprise web platform demonstrating several features:
    ```bash
    npx serve frontend
    ```
+   The JavaScript code assumes the API is available on `http://localhost:3000`.
+   If your backend runs elsewhere, update `API_BASE_URL` in
+   `frontend/js/app.js` accordingly so requests reach the correct server.
 
 ### Docker
 
