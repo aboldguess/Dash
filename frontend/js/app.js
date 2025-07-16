@@ -28,6 +28,25 @@ function login() {
     });
 }
 
+// Register a new user via the signup form
+function signup() {
+  const username = document.getElementById('signupUsername').value;
+  const password = document.getElementById('signupPassword').value;
+
+  fetch(`${API_BASE_URL}/api/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password })
+  })
+    .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed')))
+    .then(u => {
+      document.getElementById('signupStatus').textContent = `Account ${u.username} created`;
+    })
+    .catch(err => {
+      document.getElementById('signupStatus').textContent = err;
+    });
+}
+
 function sendMessage() {
   const text = document.getElementById('messageInput').value;
   // Send a new chat message to the API
