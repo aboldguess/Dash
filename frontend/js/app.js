@@ -1,8 +1,8 @@
-// Base URL for API requests. If the frontend is served from the same
-// port as the backend (e.g. both on port 3000), leave this empty so
-// all requests use the current origin. Otherwise, point to the backend
-// explicitly. Adjust the URL if your backend runs elsewhere.
-const API_BASE_URL = window.location.port === '3000' ? '' : 'http://localhost:3000';
+// Base URL for API requests. The backend runs on localhost:3000 when
+// developing locally, so all API calls target that server regardless of
+// which port the frontend is served from. Update this value if your
+// backend listens on a different host or port.
+const API_BASE_URL = 'http://localhost:3000';
 
 let currentUser = null;
 
