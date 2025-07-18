@@ -17,20 +17,16 @@ Dash is an example enterprise web platform demonstrating several features:
 
 ### Running locally
 
-1. Install dependencies for the backend:
+1. Install dependencies and start the server (which now also serves the
+   frontend):
    ```bash
    cd backend
    npm install
    npm run build
    npm start
    ```
-2. Serve the frontend using any static file server:
-   ```bash
-   # If you run this from the repository root use the path to the
-   # `frontend` folder. When inside the `frontend` directory, simply run
-   # `npx serve` or `npx serve .` so the correct directory is served.
-   npx serve frontend
-   ```
+   Browse to `http://localhost:3000` and the web interface should load
+   without a separate static file server.
    The JavaScript code assumes the API is available on `http://localhost:3000`.
    If your backend runs elsewhere, update `API_BASE_URL` in
    `frontend/js/app.js` accordingly so requests reach the correct server.
