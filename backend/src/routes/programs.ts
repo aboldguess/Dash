@@ -1,30 +1,25 @@
 import { Router } from 'express';
+import { Program } from '../models/program';
 
 const router = Router();
 
-interface Program {
-  id: number;
-  name: string;
-  owner: string;
-}
-
-let programs: Program[] = [];
-let nextId = 1;
-
-// List programs
-router.get('/', (_, res) => {
-  res.json(programs);
+// List programs stored in the database
+router.get('/', async (_, res) => {
+  const list = await Program.find().exec();
+  res.json(list);
 });
 
-// Add or update a program
-router.post('/', (req, res) => {
-  const program = req.body as Program;
-  if (!program.id) {
-    program.id = nextId++;
-    programs.push(program);
-  } else {
-    programs = programs.map(p => (p.id === program.id ? program : p));
+// Create or update a program
+router.post('/', async (req, res) => {
+  const { id, ...data } = req.body;
+
+  if (id) {
+    const updated = await Program.findByIdAndUpdate(id, data, { new: true });
+    return res.status(201).json(updated);
   }
+
+  const program = new Program(data);
+  await program.save();
   res.status(201).json(program);
 });
 

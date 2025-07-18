@@ -1,31 +1,26 @@
 import { Router } from 'express';
+import { Contact } from '../models/contact';
 
 const router = Router();
 
-interface Contact {
-  id: number;
-  name: string;
-  email: string;
-  phone: string;
-}
-
-let contacts: Contact[] = [];
-let nextId = 1;
-
-// List all contacts
-router.get('/', (_, res) => {
-  res.json(contacts);
+// Return all CRM contacts
+router.get('/', async (_, res) => {
+  const list = await Contact.find().exec();
+  res.json(list);
 });
 
-// Add or update a contact
-router.post('/', (req, res) => {
-  const contact = req.body as Contact;
-  if (!contact.id) {
-    contact.id = nextId++;
-    contacts.push(contact);
-  } else {
-    contacts = contacts.map(c => (c.id === contact.id ? contact : c));
+// Add a new contact or update an existing one
+router.post('/', async (req, res) => {
+  const { id, ...data } = req.body;
+
+  if (id) {
+    // Update path when an id is supplied
+    const updated = await Contact.findByIdAndUpdate(id, data, { new: true });
+    return res.status(201).json(updated);
   }
+
+  const contact = new Contact(data);
+  await contact.save();
   res.status(201).json(contact);
 });
 

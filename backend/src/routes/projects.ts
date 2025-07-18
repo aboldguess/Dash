@@ -1,32 +1,26 @@
 import { Router } from 'express';
+import { Project } from '../models/project';
 
 const router = Router();
 
-interface Project {
-  id: number;
-  name: string;
-  description?: string;
-  status: 'todo' | 'in-progress' | 'done';
-}
-
-let projects: Project[] = [];
-let nextId = 1;
-
-// List projects
-router.get('/', (_, res) => {
-  res.json(projects);
+// Fetch all projects in the system
+router.get('/', async (_, res) => {
+  const list = await Project.find().exec();
+  res.json(list);
 });
 
-// Add or update a project
-router.post('/', (req, res) => {
-  const project = req.body as Project;
-  if (!project.id) {
-    project.id = nextId++;
-    project.status = 'todo';
-    projects.push(project);
-  } else {
-    projects = projects.map(p => (p.id === project.id ? { ...p, ...project } : p));
+// Create a new project or update an existing one
+router.post('/', async (req, res) => {
+  const { id, ...data } = req.body;
+
+  if (id) {
+    // Update existing project
+    const updated = await Project.findByIdAndUpdate(id, data, { new: true });
+    return res.status(201).json(updated);
   }
+
+  const project = new Project(data);
+  await project.save();
   res.status(201).json(project);
 });
 
