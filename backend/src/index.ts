@@ -2,6 +2,8 @@ import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import path from 'path';
+import http from 'http';
+import { Server } from 'socket.io';
 
 import authRoutes from './routes/auth';
 import messageRoutes from './routes/messages';
@@ -11,9 +13,37 @@ import programRoutes from './routes/programs';
 import timesheetRoutes from './routes/timesheets';
 import leaveRoutes from './routes/leaves';
 import { connectDB } from './db';
+import { Message } from './models/message';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
+
+// Create the HTTP server separately so Socket.IO can share it
+const server = http.createServer(app);
+
+// Attach Socket.IO to the HTTP server with permissive CORS for demos
+const io = new Server(server, {
+  cors: { origin: '*' }
+});
+
+// Listen for new WebSocket connections
+io.on('connection', socket => {
+  console.log('Client connected');
+
+  // Handle incoming chat messages
+  socket.on('messages', async data => {
+    const { user, text } = data;
+
+    try {
+      // Persist the message then broadcast to all connected clients
+      const msg = new Message({ user, text });
+      await msg.save();
+      io.emit('messages', msg);
+    } catch (err) {
+      console.error('Failed to process message', err);
+    }
+  });
+});
 
 // Middleware configuration
 app.use(cors());
@@ -48,7 +78,8 @@ app.use((_, res) => {
 // Connect to MongoDB then start the HTTP server
 connectDB()
   .then(() => {
-    app.listen(PORT, () => {
+    // Start the combined HTTP/WebSocket server once the DB is ready
+    server.listen(PORT, () => {
       console.log(`Server listening on port ${PORT}`);
     });
   })
