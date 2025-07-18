@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 import { Contact } from '../models/contact';
 
 const router = Router();
+
+// Protect all CRM routes
+router.use(authMiddleware);
 
 // Return all CRM contacts
 router.get('/', async (_, res) => {
@@ -10,7 +14,7 @@ router.get('/', async (_, res) => {
 });
 
 // Add a new contact or update an existing one
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const { id, ...data } = req.body;
 
   if (id) {
