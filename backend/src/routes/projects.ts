@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 import { Project } from '../models/project';
 
 const router = Router();
+
+// All project routes require authentication
+router.use(authMiddleware);
 
 // Fetch all projects in the system
 router.get('/', async (_, res) => {
@@ -10,7 +14,7 @@ router.get('/', async (_, res) => {
 });
 
 // Create a new project or update an existing one
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const { id, ...data } = req.body;
 
   if (id) {

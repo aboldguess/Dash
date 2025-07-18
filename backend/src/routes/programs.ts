@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 import { Program } from '../models/program';
 
 const router = Router();
+
+// Protect program management endpoints
+router.use(authMiddleware);
 
 // List programs stored in the database
 router.get('/', async (_, res) => {
@@ -10,7 +14,7 @@ router.get('/', async (_, res) => {
 });
 
 // Create or update a program
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const { id, ...data } = req.body;
 
   if (id) {

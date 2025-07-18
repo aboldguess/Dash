@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 import { Timesheet } from '../models/timesheet';
 
 const router = Router();
+
+// All timesheet endpoints require a valid token
+router.use(authMiddleware);
 
 // List all timesheets
 router.get('/', async (_, res) => {
@@ -10,7 +14,7 @@ router.get('/', async (_, res) => {
 });
 
 // Submit or update a timesheet
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const { id, ...data } = req.body;
 
   if (id) {

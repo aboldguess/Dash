@@ -1,7 +1,11 @@
 import { Router } from 'express';
+import { authMiddleware, requireRole } from '../middleware/authMiddleware';
 import { Leave } from '../models/leave';
 
 const router = Router();
+
+// Require authentication for leave routes
+router.use(authMiddleware);
 
 // List leaves
 router.get('/', async (_, res) => {
@@ -10,7 +14,7 @@ router.get('/', async (_, res) => {
 });
 
 // Request or update leave
-router.post('/', async (req, res) => {
+router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const { id, ...data } = req.body;
 
   if (id) {
