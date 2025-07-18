@@ -5,6 +5,7 @@
 const API_BASE_URL = 'http://localhost:3000';
 
 let currentUser = null;
+let socket = null;
 
 function login() {
   const username = document.getElementById('username').value;
@@ -22,6 +23,14 @@ function login() {
       currentUser = u;
       document.getElementById('loginStatus').textContent = `Logged in as ${u.username}`;
       document.getElementById('messages').style.display = 'block';
+      // Establish WebSocket connection after successful login
+      socket = io(API_BASE_URL);
+
+      // Display incoming messages instantly
+      socket.on('messages', msg => appendMessage(msg));
+
+      // Load existing chat history once connected
+      loadMessages();
     })
     .catch(err => {
       document.getElementById('loginStatus').textContent = err;
@@ -49,13 +58,16 @@ function signup() {
 
 function sendMessage() {
   const text = document.getElementById('messageInput').value;
-  // Send a new chat message to the API
-  fetch(`${API_BASE_URL}/api/messages`, {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ user: currentUser.username, text })
-  })
-    .then(() => loadMessages());
+
+  if (!socket || !text) {
+    return;
+  }
+
+  // Emit the message through the WebSocket connection
+  socket.emit('messages', { user: currentUser.username, text });
+
+  // Clear the input for convenience
+  document.getElementById('messageInput').value = '';
 }
 
 function loadMessages() {
@@ -64,9 +76,15 @@ function loadMessages() {
     .then(r => r.json())
     .then(msgs => {
       const list = document.getElementById('messageList');
-      list.innerHTML = msgs.map(m => `<div><strong>${m.user}:</strong> ${m.text}</div>`).join('');
+      list.innerHTML = '';
+      msgs.forEach(appendMessage);
     });
 }
 
-// Periodically refresh messages
-setInterval(loadMessages, 3000);
+// Helper to add a single message element to the chat log
+function appendMessage(m) {
+  const list = document.getElementById('messageList');
+  const div = document.createElement('div');
+  div.innerHTML = `<strong>${m.user}:</strong> ${m.text}`;
+  list.appendChild(div);
+}
