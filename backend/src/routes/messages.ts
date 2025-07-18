@@ -1,20 +1,20 @@
 import { Router } from 'express';
+import { Message } from '../models/message';
 
 const router = Router();
 
-// In-memory message list for demonstration
-const messages: { user: string; text: string }[] = [];
-
-// Get all messages
-router.get('/', (_, res) => {
-  res.json(messages);
+// Retrieve all chat messages from the database
+router.get('/', async (_, res) => {
+  const msgs = await Message.find().exec();
+  res.json(msgs);
 });
 
-// Post a new message
-router.post('/', (req, res) => {
+// Store a new chat message
+router.post('/', async (req, res) => {
   const { user, text } = req.body;
-  messages.push({ user, text });
-  res.status(201).json({ message: 'Message sent' });
+  const msg = new Message({ user, text });
+  await msg.save();
+  res.status(201).json(msg);
 });
 
 export default router;

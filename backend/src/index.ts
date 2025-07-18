@@ -10,6 +10,7 @@ import projectRoutes from './routes/projects';
 import programRoutes from './routes/programs';
 import timesheetRoutes from './routes/timesheets';
 import leaveRoutes from './routes/leaves';
+import { connectDB } from './db';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -44,6 +45,14 @@ app.use((_, res) => {
   res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
-app.listen(PORT, () => {
-  console.log(`Server listening on port ${PORT}`);
-});
+// Connect to MongoDB then start the HTTP server
+connectDB()
+  .then(() => {
+    app.listen(PORT, () => {
+      console.log(`Server listening on port ${PORT}`);
+    });
+  })
+  .catch(err => {
+    console.error('Failed to connect to database', err);
+    process.exit(1);
+  });

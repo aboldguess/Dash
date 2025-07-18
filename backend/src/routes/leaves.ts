@@ -1,33 +1,25 @@
 import { Router } from 'express';
+import { Leave } from '../models/leave';
 
 const router = Router();
 
-interface Leave {
-  id: number;
-  userId: number;
-  startDate: string;
-  endDate: string;
-  status: 'pending' | 'approved' | 'rejected';
-}
-
-let leaves: Leave[] = [];
-let nextId = 1;
-
 // List leaves
-router.get('/', (_, res) => {
-  res.json(leaves);
+router.get('/', async (_, res) => {
+  const list = await Leave.find().exec();
+  res.json(list);
 });
 
 // Request or update leave
-router.post('/', (req, res) => {
-  const leave = req.body as Leave;
-  if (!leave.id) {
-    leave.id = nextId++;
-    leave.status = 'pending';
-    leaves.push(leave);
-  } else {
-    leaves = leaves.map(l => (l.id === leave.id ? { ...l, ...leave } : l));
+router.post('/', async (req, res) => {
+  const { id, ...data } = req.body;
+
+  if (id) {
+    const updated = await Leave.findByIdAndUpdate(id, data, { new: true });
+    return res.status(201).json(updated);
   }
+
+  const leave = new Leave(data);
+  await leave.save();
   res.status(201).json(leave);
 });
 

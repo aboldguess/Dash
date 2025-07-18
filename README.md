@@ -22,6 +22,8 @@ Dash is an example enterprise web platform demonstrating several features:
    ```bash
    cd backend
    npm install
+   # optional: verify database connection
+   npm run db:init
    npm run build
    npm start
    ```
@@ -41,3 +43,16 @@ docker run -p 3000:3000 dash-backend
 ```
 
 The frontend can be hosted separately or served by any static web server.
+
+## Database Setup
+
+The backend now requires access to a MongoDB instance. Configure the
+connection string using the `DB_URI` environment variable or by placing it in a
+`.env` file in `backend/`:
+
+```bash
+export DB_URI="mongodb://localhost:27017/dash"
+```
+
+Running `npm run db:init` will attempt to connect using this value. If the
+connection succeeds, the server can be started normally with `npm start`.

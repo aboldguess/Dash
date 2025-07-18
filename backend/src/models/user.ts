@@ -1,16 +1,20 @@
+import { Schema, model, Document } from 'mongoose';
+
 export type Role = 'user' | 'teamAdmin' | 'admin';
 
-// Simple in-memory user record
-export interface User {
-  id: number;
+/**
+ * Representation of a user document stored in MongoDB.
+ */
+export interface IUser extends Document {
   username: string;
-  password: string; // hashed password in production
+  password: string;
   role: Role;
 }
 
-// Dummy user list for demonstration purposes
-export const users: User[] = [
-  { id: 1, username: 'admin', password: 'admin', role: 'admin' },
-  { id: 2, username: 'team', password: 'team', role: 'teamAdmin' },
-  { id: 3, username: 'user', password: 'user', role: 'user' }
-];
+const UserSchema = new Schema<IUser>({
+  username: { type: String, required: true, unique: true },
+  password: { type: String, required: true },
+  role: { type: String, enum: ['user', 'teamAdmin', 'admin'], default: 'user' }
+});
+
+export const User = model<IUser>('User', UserSchema);
