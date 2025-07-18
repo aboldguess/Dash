@@ -1,6 +1,7 @@
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import path from 'path';
 
 import authRoutes from './routes/auth';
 import messageRoutes from './routes/messages';
@@ -26,9 +27,21 @@ app.use('/api/programs', programRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/leaves', leaveRoutes);
 
-// Health check endpoint
-app.get('/', (_, res) => {
+// Serve static frontend files. The path is resolved relative to the compiled
+// JavaScript location so it works when running from the 'dist' directory.
+const frontendDir = path.resolve(__dirname, '..', '..', 'frontend');
+app.use(express.static(frontendDir));
+
+// Health check endpoint for the API
+app.get('/api', (_, res) => {
   res.send('Dash API is running');
+});
+
+// All remaining requests should be served the frontend's index.html so that
+// direct navigation to routes works without returning a 404.
+// Use a generic handler so all unmatched routes return the same HTML file.
+app.use((_, res) => {
+  res.sendFile(path.join(frontendDir, 'index.html'));
 });
 
 app.listen(PORT, () => {
