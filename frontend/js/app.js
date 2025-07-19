@@ -4,6 +4,34 @@
 // backend listens on a different host or port.
 const API_BASE_URL = 'http://localhost:3000';
 
+// Promise used to ensure the Socket.IO client library is loaded before
+// attempting to create a connection. If the script tag included in the
+// HTML fails (for example when the frontend is served separately from the
+// backend) `io` will be undefined. This loader fetches the library from
+// the API host so `login()` can always rely on it being available.
+let socketIoReady = null;
+
+function loadSocketIo() {
+  if (typeof io !== 'undefined') {
+    // Already loaded
+    return Promise.resolve();
+  }
+
+  // Lazily inject the script only once and reuse the same promise for
+  // subsequent calls if needed.
+  if (!socketIoReady) {
+    socketIoReady = new Promise((resolve, reject) => {
+      const script = document.createElement('script');
+      script.src = `${API_BASE_URL}/socket.io/socket.io.js`;
+      script.onload = () => resolve();
+      script.onerror = () => reject(new Error('Failed to load Socket.IO'));
+      document.head.appendChild(script);
+    });
+  }
+
+  return socketIoReady;
+}
+
 let currentUser = null;
 let socket = null;
 
@@ -23,14 +51,19 @@ function login() {
       currentUser = u;
       document.getElementById('loginStatus').textContent = `Logged in as ${u.username}`;
       document.getElementById('messages').style.display = 'block';
-      // Establish WebSocket connection after successful login
-      socket = io(API_BASE_URL);
+      // Ensure the Socket.IO client is loaded before connecting. This avoids
+      // a ReferenceError in environments where the script was not included
+      // directly in the HTML.
+      return loadSocketIo().then(() => {
+        // Establish WebSocket connection after successful login
+        socket = io(API_BASE_URL);
 
-      // Display incoming messages instantly
-      socket.on('messages', msg => appendMessage(msg));
+        // Display incoming messages instantly
+        socket.on('messages', msg => appendMessage(msg));
 
-      // Load existing chat history once connected
-      loadMessages();
+        // Load existing chat history once connected
+        loadMessages();
+      });
     })
     .catch(err => {
       document.getElementById('loginStatus').textContent = err;
