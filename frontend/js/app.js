@@ -32,8 +32,8 @@ function loadSocketIo() {
   return socketIoReady;
 }
 
-let currentUser = null;
-let socket = null;
+let currentUser = null; // stores logged in user info
+let socket = null;      // active Socket.IO connection
 
 function login() {
   const username = document.getElementById('username').value;
@@ -48,22 +48,13 @@ function login() {
   })
     .then(r => r.ok ? r.json() : Promise.reject('Login failed'))
     .then(u => {
-      currentUser = u;
-      document.getElementById('loginStatus').textContent = `Logged in as ${u.username}`;
-      document.getElementById('messages').style.display = 'block';
-      // Ensure the Socket.IO client is loaded before connecting. This avoids
-      // a ReferenceError in environments where the script was not included
-      // directly in the HTML.
-      return loadSocketIo().then(() => {
-        // Establish WebSocket connection after successful login
-        socket = io(API_BASE_URL);
+      // Persist auth details so other pages can verify login state
+      localStorage.setItem('token', u.token);
+      localStorage.setItem('username', u.username);
 
-        // Display incoming messages instantly
-        socket.on('messages', msg => appendMessage(msg));
-
-        // Load existing chat history once connected
-        loadMessages();
-      });
+      // Redirect straight to the dashboard where the websocket
+      // connection will be established.
+      window.location.href = 'dashboard.html';
     })
     .catch(err => {
       document.getElementById('loginStatus').textContent = err;
@@ -82,7 +73,11 @@ function signup() {
   })
     .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed')))
     .then(u => {
+      // Inform the user and send them to the login page
       document.getElementById('signupStatus').textContent = `Account ${u.username} created`;
+      setTimeout(() => {
+        window.location.href = 'login.html';
+      }, 1000);
     })
     .catch(err => {
       document.getElementById('signupStatus').textContent = err;
@@ -120,4 +115,34 @@ function appendMessage(m) {
   const div = document.createElement('div');
   div.innerHTML = `<strong>${m.user}:</strong> ${m.text}`;
   list.appendChild(div);
+}
+
+// Verify the user is logged in before showing the dashboard
+function checkAuth() {
+  const token = localStorage.getItem('token');
+  const username = localStorage.getItem('username');
+  if (!token || !username) {
+    // Not authenticated - return to login page
+    window.location.href = 'login.html';
+    return;
+  }
+
+  currentUser = { username, token };
+
+  // After setting currentUser, connect to Socket.IO and load messages
+  loadSocketIo().then(() => {
+    socket = io(API_BASE_URL);
+    socket.on('messages', msg => appendMessage(msg));
+    loadMessages();
+  });
+}
+
+// Clear stored credentials and return to login page
+function logout() {
+  localStorage.removeItem('token');
+  localStorage.removeItem('username');
+  if (socket) {
+    socket.disconnect();
+  }
+  window.location.href = 'login.html';
 }

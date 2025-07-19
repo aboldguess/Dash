@@ -7,31 +7,21 @@
   <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-  <h1>Dash Web Interface</h1>
-  <div id="login">
-    <h2>Login</h2>
-    <input id="username" placeholder="username" />
-    <input id="password" placeholder="password" type="password" />
-    <button onclick="login()">Login</button>
-    <p id="loginStatus"></p>
-  </div>
+  <!-- Simple brand header for consistent styling -->
+  <header>
+    <nav>
+      <strong>Dash</strong>
+    </nav>
+  </header>
 
-  <div id="signup">
-    <h2>Sign Up</h2>
-    <input id="signupUsername" placeholder="username" />
-    <input id="signupPassword" placeholder="password" type="password" />
-    <button onclick="signup()">Sign Up</button>
-    <p id="signupStatus"></p>
-  </div>
-
-  <section id="messages" style="display:none;">
-    <h2>Instant Messages</h2>
-    <div id="messageList"></div>
-    <input id="messageInput" placeholder="Message" />
-    <button onclick="sendMessage()">Send</button>
+  <!-- Hero section shown to unauthenticated users -->
+  <section class="hero">
+    <h1>Welcome to Dash</h1>
+    <p>The platform for all your project and communication needs.</p>
+    <div>
+      <a href="login.html"><button>Login</button></a>
+      <a href="signup.html"><button>Sign Up</button></a>
+    </div>
   </section>
-
-  <script src="/socket.io/socket.io.js"></script>
-  <script src="js/app.js"></script>
 </body>
 </html>
