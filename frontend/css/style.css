@@ -1,5 +1,75 @@
-body { font-family: sans-serif; margin: 2rem; }
-input { margin-right: 0.5rem; }
-@media (max-width: 600px) {
-  body { font-size: 14px; }
+/* Global layout styles */
+body {
+  margin: 0;
+  font-family: sans-serif;
+}
+
+/* Simple brand header used across pages */
+header {
+  background: #004080;
+  color: #fff;
+  padding: 1rem;
+}
+
+header nav a {
+  color: #fff;
+  margin-right: 1rem;
+  text-decoration: none;
+}
+
+/* Landing page hero section */
+.hero {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  height: calc(100vh - 70px);
+  text-align: center;
+}
+
+.hero h1 {
+  margin-bottom: 1rem;
+}
+
+/* Dashboard layout with sidebar and main content */
+.sidebar {
+  position: fixed;
+  top: 60px;
+  left: 0;
+  width: 200px;
+  height: calc(100vh - 60px);
+  background: #f4f4f4;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+.content {
+  margin-left: 200px;
+  padding: 1rem;
+  box-sizing: border-box;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+  .sidebar {
+    position: static;
+    width: 100%;
+    height: auto;
+  }
+  .content {
+    margin-left: 0;
+  }
+}
+
+/* Form elements */
+input {
+  margin: 0.5rem 0;
+  padding: 0.5rem;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+button {
+  padding: 0.5rem 1rem;
+  margin-top: 0.5rem;
 }
