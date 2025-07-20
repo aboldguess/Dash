@@ -27,6 +27,8 @@
     <!-- Chat messages area reused from the original example -->
     <section id="messages">
       <h2>Instant Messages</h2>
+      <label for="channelSelect">Channel:</label>
+      <select id="channelSelect" onchange="changeChannel()"></select>
       <div id="messageList"></div>
       <input id="messageInput" placeholder="Message" />
       <button onclick="sendMessage()">Send</button>

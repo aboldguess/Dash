@@ -7,6 +7,7 @@ import { Server } from 'socket.io';
 
 import authRoutes from './routes/auth';
 import messageRoutes from './routes/messages';
+import channelRoutes from './routes/channels';
 import crmRoutes from './routes/crm';
 import projectRoutes from './routes/projects';
 import programRoutes from './routes/programs';
@@ -30,15 +31,21 @@ const io = new Server(server, {
 io.on('connection', socket => {
   console.log('Client connected');
 
-  // Handle incoming chat messages
+  // Clients join rooms representing channels so messages can be scoped
+  socket.on('join', channel => {
+    socket.join(channel);
+  });
+
+  // Handle incoming chat messages scoped to a channel
   socket.on('messages', async data => {
-    const { user, text } = data;
+    const { user, text, channel } = data;
 
     try {
-      // Persist the message then broadcast to all connected clients
-      const msg = new Message({ user, text });
+      // Persist the message then broadcast it only to the channel members
+      const msg = new Message({ user, text, channel });
       await msg.save();
-      io.emit('messages', msg);
+      // Emit only to clients in the same channel
+      io.to(channel).emit('messages', msg);
     } catch (err) {
       console.error('Failed to process message', err);
     }
@@ -52,6 +59,7 @@ app.use(bodyParser.json());
 // Route bindings for various features
 app.use('/api/auth', authRoutes);
 app.use('/api/messages', messageRoutes);
+app.use('/api/channels', channelRoutes);
 app.use('/api/crm', crmRoutes);
 app.use('/api/projects', projectRoutes);
 app.use('/api/programs', programRoutes);
