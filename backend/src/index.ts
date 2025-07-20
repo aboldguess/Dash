@@ -17,6 +17,7 @@ import userRoutes from './routes/users';
 import { connectDB } from './db';
 import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
+import { seedUsers } from './seedUsers';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -107,7 +108,10 @@ app.use((_, res) => {
 
 // Connect to MongoDB then start the HTTP server
 connectDB()
-  .then(() => {
+  .then(async () => {
+    // Populate demo accounts before accepting connections
+    await seedUsers();
+
     // Start the combined HTTP/WebSocket server once the DB is ready
     server.listen(PORT, () => {
       console.log(`Server listening on port ${PORT}`);
