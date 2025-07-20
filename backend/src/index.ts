@@ -30,6 +30,8 @@ const server = http.createServer(app);
 const io = new Server(server, {
   cors: { origin: '*' }
 });
+// Make the Socket.IO instance accessible to route handlers via app.get('io')
+app.set('io', io);
 
 // Listen for new WebSocket connections
 io.on('connection', socket => {

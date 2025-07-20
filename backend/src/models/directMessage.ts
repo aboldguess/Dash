@@ -12,6 +12,8 @@ export interface IDirectMessage extends Document {
   text: string;
   /** Time the message was created */
   createdAt: Date;
+  /** Whether the recipient has viewed the message */
+  isRead: boolean;
 }
 
 const DirectMessageSchema = new Schema<IDirectMessage>({
@@ -19,7 +21,9 @@ const DirectMessageSchema = new Schema<IDirectMessage>({
   to: { type: String, required: true },
   text: { type: String, required: true },
   // Automatically store creation timestamp
-  createdAt: { type: Date, default: Date.now }
+  createdAt: { type: Date, default: Date.now },
+  // Track if the message has been read by the recipient
+  isRead: { type: Boolean, default: false }
 });
 
 export const DirectMessage = model<IDirectMessage>('DirectMessage', DirectMessageSchema);

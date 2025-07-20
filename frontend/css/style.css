@@ -144,3 +144,20 @@ button {
 .user-online .online-indicator {
   background: #0a0;
 }
+
+.message .read {
+  color: #0a0;
+  font-size: 0.8rem;
+  margin-left: 4px;
+}
+
+/* Badge showing the number of unread direct messages */
+.badge {
+  display: inline-block;
+  background: #e00;
+  color: #fff;
+  border-radius: 10px;
+  padding: 0 4px;
+  margin-left: 4px;
+  font-size: 0.75rem;
+}
