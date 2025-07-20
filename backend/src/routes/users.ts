@@ -2,6 +2,7 @@ import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { User } from '../models/user';
 import { DirectMessage } from '../models/directMessage';
+import { onlineUsers } from '../presence';
 
 const router = Router();
 
@@ -9,11 +10,15 @@ const router = Router();
 router.use(authMiddleware);
 
 /**
- * Get a list of all registered users. Only exposes the username.
+ * Get a list of all registered users along with their online status.
  */
 router.get('/', async (_req, res) => {
   const users = await User.find().select('username').exec();
-  res.json(users);
+  const result = users.map(u => ({
+    username: u.username,
+    online: onlineUsers.has(u.username)
+  }));
+  res.json(result);
 });
 
 /**

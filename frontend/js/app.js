@@ -238,11 +238,21 @@ function loadUsers() {
       users.forEach(u => {
         if (u.username === currentUser.username) return; // skip self
         const li = document.createElement('li');
-        li.textContent = u.username;
+        li.dataset.user = u.username;
+        li.className = u.online ? 'user-online' : 'user-offline';
+        li.innerHTML = `<span class="online-indicator"></span>${u.username}`;
         li.onclick = () => selectUser(u.username);
         list.appendChild(li);
       });
     });
+}
+
+// Update the displayed online status for a single user
+function handlePresence(name, online) {
+  const item = document.querySelector(`#userList li[data-user="${name}"]`);
+  if (item) {
+    item.className = online ? 'user-online' : 'user-offline';
+  }
 }
 
 // Select a user to view direct conversation
@@ -276,6 +286,9 @@ function checkAuth() {
         appendDirectMessage(dm);
       }
     });
+    // Update presence indicators in real time
+    socket.on('userOnline', name => handlePresence(name, true));
+    socket.on('userOffline', name => handlePresence(name, false));
     // Default to messaging view once authenticated
     selectTool('messages');
   });
