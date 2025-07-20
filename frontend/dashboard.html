@@ -14,28 +14,50 @@
     </nav>
   </header>
 
-  <aside class="sidebar">
-    <p><strong>Navigation</strong></p>
-    <ul>
-      <li><a href="#messages">Messages</a></li>
-      <li><a href="#" onclick="alert('CRM coming soon')">CRM</a></li>
-      <li><a href="#" onclick="alert('Projects coming soon')">Projects</a></li>
-    </ul>
-    <p><strong>Users</strong></p>
-    <ul id="userList"></ul>
-  </aside>
+  <!-- Main layout with two sidebars -->
+  <div class="main-layout">
+    <!-- Left sidebar for selecting the active business tool -->
+    <nav class="tool-sidebar">
+      <ul>
+        <li id="tool-messages" class="active" onclick="selectTool('messages')">💬</li>
+        <li id="tool-crm" onclick="selectTool('crm')">CRM</li>
+        <li id="tool-timesheets" onclick="selectTool('timesheets')">TS</li>
+        <li id="tool-recruit" onclick="selectTool('recruit')">HR</li>
+      </ul>
+    </nav>
 
-  <main class="content">
-    <!-- Chat messages area reused from the original example -->
-    <section id="messages">
-      <h2>Instant Messages</h2>
-      <label for="channelSelect">Channel:</label>
-      <select id="channelSelect" onchange="changeChannel()"></select>
-      <div id="messageList"></div>
-      <input id="messageInput" placeholder="Message" />
-      <button onclick="sendMessage()">Send</button>
-    </section>
-  </main>
+    <!-- Contextual sidebar which changes based on the selected tool -->
+    <aside class="context-sidebar" id="contextSidebar">
+      <p><strong>Users</strong></p>
+      <ul id="userList"></ul>
+    </aside>
+
+    <main class="content">
+      <!-- Messaging section -->
+      <section id="messages">
+        <h2>Instant Messages</h2>
+        <label for="channelSelect">Channel:</label>
+        <select id="channelSelect" onchange="changeChannel()"></select>
+        <div id="messageList"></div>
+        <input id="messageInput" placeholder="Message" />
+        <button onclick="sendMessage()">Send</button>
+      </section>
+
+      <!-- Placeholder sections for future tools -->
+      <section id="crm" class="hidden">
+        <h2>CRM</h2>
+        <p>CRM functionality coming soon.</p>
+      </section>
+      <section id="timesheets" class="hidden">
+        <h2>Timesheets</h2>
+        <p>Timesheets functionality coming soon.</p>
+      </section>
+      <section id="recruit" class="hidden">
+        <h2>Recruitment</h2>
+        <p>Recruitment functionality coming soon.</p>
+      </section>
+    </main>
+  </div>
 
   <!-- Socket.IO will be loaded dynamically if needed -->
   <script src="js/app.js"></script>

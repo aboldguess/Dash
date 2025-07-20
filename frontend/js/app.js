@@ -37,6 +37,39 @@ let currentUser = null;
 let socket = null;      // active Socket.IO connection
 let currentChannel = null; // id of the selected channel
 let selectedUser = null; // username of direct message recipient
+let activeTool = 'messages'; // currently selected tool
+
+// Switch between major tools (messaging, CRM, etc.) and update layout
+function selectTool(tool) {
+  activeTool = tool;
+
+  // Highlight the selected tool in the sidebar
+  document.querySelectorAll('.tool-sidebar li').forEach(li => li.classList.remove('active'));
+  const activeItem = document.getElementById('tool-' + tool);
+  if (activeItem) activeItem.classList.add('active');
+
+  // Show or hide the contextual sidebar
+  const context = document.getElementById('contextSidebar');
+  if (tool === 'messages') {
+    context.classList.remove('hidden');
+    // Refresh messaging context when switching back
+    loadUsers();
+    loadChannels();
+  } else {
+    context.classList.add('hidden');
+  }
+
+  // Display the relevant section in the main area
+  document.querySelectorAll('.content > section').forEach(sec => sec.classList.add('hidden'));
+  const activeSection = document.getElementById(tool);
+  if (activeSection) activeSection.classList.remove('hidden');
+
+  // Clear message view state when leaving messaging
+  if (tool !== 'messages') {
+    selectedUser = null;
+    currentChannel = null;
+  }
+}
 
 function login() {
   const username = document.getElementById('username').value;
@@ -243,8 +276,8 @@ function checkAuth() {
         appendDirectMessage(dm);
       }
     });
-    loadChannels();
-    loadUsers();
+    // Default to messaging view once authenticated
+    selectTool('messages');
   });
 }
 
