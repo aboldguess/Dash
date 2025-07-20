@@ -73,3 +73,23 @@ button {
   padding: 0.5rem 1rem;
   margin-top: 0.5rem;
 }
+
+/* Styles for direct messages */
+.message {
+  display: flex;
+  align-items: center;
+  margin-bottom: 0.5rem;
+}
+
+.message .avatar {
+  width: 32px;
+  height: 32px;
+  margin-right: 0.5rem;
+  border-radius: 50%;
+}
+
+.message .time {
+  color: #777;
+  margin-left: auto;
+  font-size: 0.8rem;
+}

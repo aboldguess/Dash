@@ -13,8 +13,10 @@ import projectRoutes from './routes/projects';
 import programRoutes from './routes/programs';
 import timesheetRoutes from './routes/timesheets';
 import leaveRoutes from './routes/leaves';
+import userRoutes from './routes/users';
 import { connectDB } from './db';
 import { Message } from './models/message';
+import { DirectMessage } from './models/directMessage';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -36,6 +38,11 @@ io.on('connection', socket => {
     socket.join(channel);
   });
 
+  // Register a user-specific room for direct messages
+  socket.on('register', username => {
+    socket.join(username);
+  });
+
   // Handle incoming chat messages scoped to a channel
   socket.on('messages', async data => {
     const { user, text, channel } = data;
@@ -48,6 +55,20 @@ io.on('connection', socket => {
       io.to(channel).emit('messages', msg);
     } catch (err) {
       console.error('Failed to process message', err);
+    }
+  });
+
+  // Handle direct messages between individual users
+  socket.on('directMessage', async data => {
+    const { from, to, text } = data;
+
+    try {
+      const dm = new DirectMessage({ from, to, text });
+      await dm.save();
+      // Emit the message to both participants
+      io.to(from).to(to).emit('directMessage', dm);
+    } catch (err) {
+      console.error('Failed to process direct message', err);
     }
   });
 });
@@ -65,6 +86,7 @@ app.use('/api/projects', projectRoutes);
 app.use('/api/programs', programRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/leaves', leaveRoutes);
+app.use('/api/users', userRoutes);
 
 // Serve static frontend files. The path is resolved relative to the compiled
 // JavaScript location so it works when running from the 'dist' directory.
