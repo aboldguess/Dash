@@ -34,6 +34,7 @@ function loadSocketIo() {
 
 let currentUser = null; // stores logged in user info
 let socket = null;      // active Socket.IO connection
+let currentChannel = null; // id of the selected channel
 
 function login() {
   const username = document.getElementById('username').value;
@@ -87,20 +88,63 @@ function signup() {
 function sendMessage() {
   const text = document.getElementById('messageInput').value;
 
-  if (!socket || !text) {
+  if (!socket || !text || !currentChannel) {
     return;
   }
 
-  // Emit the message through the WebSocket connection
-  socket.emit('messages', { user: currentUser.username, text });
+  // Emit the message and include the channel for routing on the server
+  socket.emit('messages', {
+    user: currentUser.username,
+    text,
+    channel: currentChannel
+  });
 
   // Clear the input for convenience
   document.getElementById('messageInput').value = '';
 }
 
+// Retrieve available channels for the logged in user
+function loadChannels() {
+  fetch(`${API_BASE_URL}/api/channels`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(chs => {
+      const select = document.getElementById('channelSelect');
+      select.innerHTML = '';
+      chs.forEach(c => {
+        const opt = document.createElement('option');
+        opt.value = c._id;
+        opt.textContent = c.name;
+        select.appendChild(opt);
+      });
+      if (chs.length > 0) {
+        currentChannel = chs[0]._id;
+        select.value = currentChannel;
+        if (socket) {
+          socket.emit('join', currentChannel);
+        }
+        loadMessages();
+      }
+    });
+}
+
+// Switch the active channel and request a fresh message list
+function changeChannel() {
+  const select = document.getElementById('channelSelect');
+  currentChannel = select.value;
+  if (socket) {
+    socket.emit('join', currentChannel);
+  }
+  loadMessages();
+}
+
 function loadMessages() {
-  // Retrieve the latest chat messages from the API
-  fetch(`${API_BASE_URL}/api/messages`)
+  if (!currentChannel) {
+    return;
+  }
+  // Retrieve the latest chat messages for the active channel
+  fetch(`${API_BASE_URL}/api/messages/channel/${currentChannel}`)
     .then(r => r.json())
     .then(msgs => {
       const list = document.getElementById('messageList');
@@ -129,11 +173,11 @@ function checkAuth() {
 
   currentUser = { username, token };
 
-  // After setting currentUser, connect to Socket.IO and load messages
+  // After setting currentUser, connect to Socket.IO and load channels/messages
   loadSocketIo().then(() => {
     socket = io(API_BASE_URL);
     socket.on('messages', msg => appendMessage(msg));
-    loadMessages();
+    loadChannels();
   });
 }
 
