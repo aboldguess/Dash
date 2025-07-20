@@ -46,9 +46,10 @@ The frontend can be hosted separately or served by any static web server.
 
 ## Database Setup
 
-The backend now requires access to a MongoDB instance. Configure the
-connection string using the `DB_URI` environment variable or by placing it in a
-`.env` file in `backend/`:
+The backend now requires access to a MongoDB instance. Copy the provided
+`.env.example` to `.env` inside `backend/` and update the `DB_URI` value if your
+database runs elsewhere. Alternatively you can export the variable in your
+shell:
 
 ```bash
 export DB_URI="mongodb://localhost:27017/dash"
