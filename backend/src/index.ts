@@ -18,6 +18,7 @@ import { connectDB } from './db';
 import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
 import { seedUsers } from './seedUsers';
+import { onlineUsers } from './presence';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -39,9 +40,24 @@ io.on('connection', socket => {
     socket.join(channel);
   });
 
-  // Register a user-specific room for direct messages
+  // Register a user-specific room for direct messages and track presence
   socket.on('register', username => {
+    // Store the username on the socket for cleanup later
+    socket.data.username = username;
     socket.join(username);
+    // Remember this user is currently online
+    onlineUsers.add(username);
+    // Notify all clients that a user has come online
+    io.emit('userOnline', username);
+  });
+
+  // Remove the user from the presence list when they disconnect
+  socket.on('disconnect', () => {
+    const username = socket.data.username;
+    if (username) {
+      onlineUsers.delete(username);
+      io.emit('userOffline', username);
+    }
   });
 
   // Handle incoming chat messages scoped to a channel
