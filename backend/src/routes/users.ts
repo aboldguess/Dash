@@ -35,6 +35,17 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
       { from: other, to: current }
     ]
   }).sort({ createdAt: 1 }).exec();
+  // Mark all messages sent to the current user as read
+  const unread = await DirectMessage.updateMany(
+    { from: other, to: current, isRead: false },
+    { isRead: true }
+  );
+
+  // Notify the sender that messages were read
+  if (unread.modifiedCount > 0) {
+    const io = req.app.get('io');
+    io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+  }
 
   res.json(msgs);
 });
@@ -51,6 +62,25 @@ router.post('/conversation/:user', async (req: AuthRequest, res) => {
   await msg.save();
 
   res.status(201).json(msg);
+});
+
+/**
+ * Get the count of unread direct messages for the logged in user grouped by sender.
+ */
+router.get('/unread', async (req: AuthRequest, res) => {
+  const current = req.user!.username;
+
+  const counts = await DirectMessage.aggregate([
+    { $match: { to: current, isRead: false } },
+    { $group: { _id: '$from', count: { $sum: 1 } } }
+  ]).exec();
+
+  const result: Record<string, number> = {};
+  counts.forEach(c => {
+    result[c._id as string] = c.count as number;
+  });
+
+  res.json(result);
 });
 
 export default router;

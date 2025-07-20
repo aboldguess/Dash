@@ -37,6 +37,8 @@ let currentUser = null;
 let socket = null;      // active Socket.IO connection
 let currentChannel = null; // id of the selected channel
 let selectedUser = null; // username of direct message recipient
+// Number of unread messages per user for quick badges
+let unreadCounts = {};
 let activeTool = 'messages'; // currently selected tool
 
 // Switch between major tools (messaging, CRM, etc.) and update layout
@@ -195,7 +197,11 @@ function loadMessages() {
       headers: { Authorization: `Bearer ${currentUser.token}` }
     })
       .then(r => r.json())
-      .then(msgs => msgs.forEach(appendDirectMessage));
+      .then(msgs => {
+        msgs.forEach(appendDirectMessage);
+        // Reload unread counts as messages have been marked read
+        loadUnreadCounts();
+      });
   } else if (currentChannel) {
     // Retrieve the latest chat messages for the active channel
     fetch(`${API_BASE_URL}/api/messages/channel/${currentChannel}`)
@@ -218,11 +224,14 @@ function appendDirectMessage(m) {
   const div = document.createElement('div');
   const time = new Date(m.createdAt).toLocaleTimeString();
   div.className = 'message';
+  const receipt = m.from === currentUser.username
+    ? `<span class="read">${m.isRead ? '✔✔' : '✔'}</span>`
+    : '';
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
     <span class="user">${m.from}</span>
     <span class="time">${time}</span>
-    <span class="text">${m.text}</span>`;
+    <span class="text">${m.text}</span>${receipt}`;
   list.appendChild(div);
 }
 
@@ -240,11 +249,61 @@ function loadUsers() {
         const li = document.createElement('li');
         li.dataset.user = u.username;
         li.className = u.online ? 'user-online' : 'user-offline';
-        li.innerHTML = `<span class="online-indicator"></span>${u.username}`;
+        li.innerHTML = `<span class="online-indicator"></span>${u.username}<span class="badge hidden"></span>`;
         li.onclick = () => selectUser(u.username);
         list.appendChild(li);
       });
+      // After rendering users load unread counts to display badges
+      loadUnreadCounts();
     });
+}
+
+// Fetch unread message counts and display badges next to users
+function loadUnreadCounts() {
+  fetch(`${API_BASE_URL}/api/users/unread`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(counts => {
+      unreadCounts = counts;
+      Object.keys(counts).forEach(user => {
+        const li = document.querySelector(`#userList li[data-user="${user}"]`);
+        if (li) {
+          const badge = li.querySelector('.badge');
+          if (counts[user] > 0) {
+            badge.textContent = counts[user];
+            badge.classList.remove('hidden');
+            li.classList.add('unread');
+          } else {
+            badge.classList.add('hidden');
+            li.classList.remove('unread');
+          }
+        }
+      });
+    });
+}
+
+// Increase the unread counter for a given user and update the badge
+function incrementUnread(user) {
+  unreadCounts[user] = (unreadCounts[user] || 0) + 1;
+  const li = document.querySelector(`#userList li[data-user="${user}"]`);
+  if (li) {
+    const badge = li.querySelector('.badge');
+    badge.textContent = unreadCounts[user];
+    badge.classList.remove('hidden');
+    li.classList.add('unread');
+  }
+}
+
+// Clear unread count when opening a conversation
+function clearUnread(user) {
+  unreadCounts[user] = 0;
+  const li = document.querySelector(`#userList li[data-user="${user}"]`);
+  if (li) {
+    const badge = li.querySelector('.badge');
+    if (badge) badge.classList.add('hidden');
+    li.classList.remove('unread');
+  }
 }
 
 // Update the displayed online status for a single user
@@ -259,6 +318,7 @@ function handlePresence(name, online) {
 function selectUser(name) {
   selectedUser = name;
   currentChannel = null; // hide channel context
+  clearUnread(name);
   loadMessages();
 }
 
@@ -284,6 +344,15 @@ function checkAuth() {
       // Only show incoming messages if conversation is open
       if (selectedUser === dm.from || selectedUser === dm.to) {
         appendDirectMessage(dm);
+      } else if (dm.to === currentUser.username) {
+        incrementUnread(dm.from);
+      }
+    });
+    // Receive read receipt updates for sent messages
+    socket.on('messagesRead', data => {
+      if (selectedUser === data.from) {
+        // Reload counts and conversation so read indicators update
+        loadMessages();
       }
     });
     // Update presence indicators in real time
