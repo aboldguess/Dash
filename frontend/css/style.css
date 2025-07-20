@@ -31,33 +31,65 @@ header nav a {
   margin-bottom: 1rem;
 }
 
-/* Dashboard layout with sidebar and main content */
-.sidebar {
-  position: fixed;
-  top: 60px;
-  left: 0;
+/* Layout for the dashboard with two sidebars similar to Slack/Teams */
+.main-layout {
+  display: flex;
+  height: calc(100vh - 60px); /* subtract header height */
+}
+
+/* Narrow tool selector on the far left */
+.tool-sidebar {
+  width: 60px;
+  background: #333;
+  color: #fff;
+  padding-top: 1rem;
+  box-sizing: border-box;
+}
+
+.tool-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  text-align: center;
+}
+
+.tool-sidebar li {
+  padding: 0.5rem 0;
+  cursor: pointer;
+}
+
+.tool-sidebar li.active {
+  background: #555;
+}
+
+/* Contextual sidebar shown for the selected tool */
+.context-sidebar {
   width: 200px;
-  height: calc(100vh - 60px);
   background: #f4f4f4;
   padding: 1rem;
   box-sizing: border-box;
 }
 
 .content {
-  margin-left: 200px;
+  flex: 1;
   padding: 1rem;
   box-sizing: border-box;
+  overflow-y: auto;
 }
 
 /* Responsive adjustments */
 @media (max-width: 768px) {
-  .sidebar {
-    position: static;
-    width: 100%;
+  .main-layout {
+    flex-direction: column;
     height: auto;
   }
-  .content {
-    margin-left: 0;
+  .tool-sidebar {
+    width: 100%;
+    display: flex;
+    justify-content: space-around;
+  }
+  .context-sidebar {
+    width: 100%;
   }
 }
 
@@ -92,4 +124,9 @@ button {
   color: #777;
   margin-left: auto;
   font-size: 0.8rem;
+}
+
+/* Utility class to toggle visibility */
+.hidden {
+  display: none;
 }
