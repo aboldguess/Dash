@@ -143,6 +143,12 @@ button {
   border-radius: 50%;
 }
 
+/* Style the sender name distinctly and leave space before the message text */
+.message .user {
+  font-weight: bold;
+  margin-right: 0.25rem;
+}
+
 .message .text {
   /* Allow the message body to consume remaining space so the
      timestamp and read receipt align to the right */
