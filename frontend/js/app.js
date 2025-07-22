@@ -266,7 +266,7 @@ function appendDirectMessage(m) {
   // the layout resembles common chat apps.
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
-    <span class="user">${m.from}</span>
+    <span class="user">${m.from}:</span>
     <span class="text">${m.text}</span>
     <span class="time">${time}</span>${receipt}`;
   list.appendChild(div);
@@ -303,18 +303,18 @@ function loadUnreadCounts() {
     .then(r => r.json())
     .then(counts => {
       unreadCounts = counts;
-      Object.keys(counts).forEach(user => {
-        const li = document.querySelector(`#userList li[data-user="${user}"]`);
-        if (li) {
-          const badge = li.querySelector('.badge');
-          if (counts[user] > 0) {
-            badge.textContent = counts[user];
-            badge.classList.remove('hidden');
-            li.classList.add('unread');
-          } else {
-            badge.classList.add('hidden');
-            li.classList.remove('unread');
-          }
+      // Update every listed user so badges reset when a conversation is read
+      document.querySelectorAll('#userList li').forEach(li => {
+        const user = li.dataset.user;
+        const badge = li.querySelector('.badge');
+        const count = counts[user] || 0;
+        if (count > 0) {
+          badge.textContent = count;
+          badge.classList.remove('hidden');
+          li.classList.add('unread');
+        } else {
+          badge.classList.add('hidden');
+          li.classList.remove('unread');
         }
       });
     });
