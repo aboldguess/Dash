@@ -145,6 +145,8 @@ button {
 
 /* Style the sender name distinctly and leave space before the message text */
 .message .user {
+  /* Display inline so the trailing pseudo-element flows naturally */
+  display: inline;
   font-weight: bold;
   margin-right: 0.25rem; /* space after username */
 }
