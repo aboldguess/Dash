@@ -228,11 +228,30 @@ function appendMessage(m) {
 }
 
 // Render a direct message including timestamp and avatars
+function formatRelativeTime(dateStr) {
+  // Difference in seconds between now and when the message was created
+  const diff = Math.floor((Date.now() - new Date(dateStr).getTime()) / 1000);
+
+  if (diff < 60) return 'just now';
+  const minutes = Math.floor(diff / 60);
+  if (minutes < 60) {
+    return `${minutes} minute${minutes === 1 ? '' : 's'} ago`;
+  }
+  const hours = Math.floor(minutes / 60);
+  if (hours < 24) {
+    return `${hours} hour${hours === 1 ? '' : 's'} ago`;
+  }
+  const days = Math.floor(hours / 24);
+  return `${days} day${days === 1 ? '' : 's'} ago`;
+}
+
 function appendDirectMessage(m) {
   const list = document.getElementById('messageList');
   const div = document.createElement('div');
-  const time = new Date(m.createdAt).toLocaleTimeString();
+  // Convert message timestamp to a relative description like "5 minutes ago"
+  const time = formatRelativeTime(m.createdAt);
   div.className = 'message';
+  // Only show read receipts on messages sent by the current user
   const receipt = m.from === currentUser.username
     ? `<span class="read">${m.isRead ? '✔✔' : '✔'}</span>`
     : '';
