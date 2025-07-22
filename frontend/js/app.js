@@ -133,18 +133,25 @@ function sendMessage() {
 
   if (selectedUser) {
     // Direct message to another user
-    socket.emit('directMessage', {
+    const dm = {
       from: currentUser.username,
       to: selectedUser,
-      text
-    });
+      text,
+      createdAt: new Date().toISOString(),
+      isRead: false
+    };
+    // Optimistically render the message so it appears instantly
+    appendDirectMessage(dm);
+    socket.emit('directMessage', dm);
   } else if (currentChannel) {
     // Channel message
-    socket.emit('messages', {
+    const msg = {
       user: currentUser.username,
       text,
       channel: currentChannel
-    });
+    };
+    appendMessage(msg);
+    socket.emit('messages', msg);
   }
 
   // Clear the input for convenience

@@ -56,6 +56,7 @@ header nav a {
 .tool-sidebar li {
   padding: 0.5rem 0;
   cursor: pointer;
+  font-size: 1.2rem;
 }
 
 .tool-sidebar li.active {
@@ -68,6 +69,28 @@ header nav a {
   background: #f4f4f4;
   padding: 1rem;
   box-sizing: border-box;
+  border-right: 1px solid #ddd;
+}
+
+.context-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.context-sidebar li {
+  padding: 0.25rem 0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+}
+
+.context-sidebar li .badge {
+  margin-left: auto;
+}
+
+.context-sidebar li.unread {
+  font-weight: bold;
 }
 
 .content {
