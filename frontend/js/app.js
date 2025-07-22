@@ -262,11 +262,13 @@ function appendDirectMessage(m) {
     ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : (m.isDelivered ? '✔' : '')}</span>`
     : '';
 
+  // Place the timestamp and read receipt at the end of the flex container so
+  // the layout resembles common chat apps.
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
     <span class="user">${m.from}</span>
-    <span class="time">${time}</span>
-    <span class="text">${m.text}</span>${receipt}`;
+    <span class="text">${m.text}</span>
+    <span class="time">${time}</span>${receipt}`;
   list.appendChild(div);
 }
 

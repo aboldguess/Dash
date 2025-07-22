@@ -143,9 +143,15 @@ button {
   border-radius: 50%;
 }
 
+.message .text {
+  /* Allow the message body to consume remaining space so the
+     timestamp and read receipt align to the right */
+  flex: 1;
+}
+
 .message .time {
   color: #777;
-  margin-left: auto;
+  margin-left: 0.5rem; /* space after the message text */
   font-size: 0.8rem;
 }
 
