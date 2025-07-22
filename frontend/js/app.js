@@ -267,7 +267,7 @@ function appendDirectMessage(m) {
   // the layout resembles common chat apps.
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
-    <span class="user">${m.from}</span>
+    <span class="user">${m.from}:</span>
     <span class="text">${m.text}</span>
     <span class="time">${time}</span>${receipt}`;
   list.appendChild(div);
