@@ -406,8 +406,10 @@ function checkAuth() {
     });
     // Receive read receipt updates for sent messages
     socket.on('messagesRead', data => {
+      // Refresh badge counts in case another tab marked messages as read
+      loadUnreadCounts();
       if (selectedUser === data.from) {
-        // Reload counts and conversation so read indicators update
+        // If this conversation is visible update the chat log as well
         loadMessages();
       }
     });
