@@ -259,7 +259,8 @@ function appendDirectMessage(m) {
   // delivered.
   const outgoing = m.from === currentUser.username;
   const receipt = outgoing
-    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : (m.isDelivered ? '✔' : '')}</span>`
+    // Use HTML entities so the ticks render consistently across fonts
+    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '&#10004;&#10004;' : (m.isDelivered ? '&#10004;' : '')}</span>`
     : '';
 
   // Place the timestamp and read receipt at the end of the flex container so
@@ -303,18 +304,18 @@ function loadUnreadCounts() {
     .then(r => r.json())
     .then(counts => {
       unreadCounts = counts;
-      Object.keys(counts).forEach(user => {
-        const li = document.querySelector(`#userList li[data-user="${user}"]`);
-        if (li) {
-          const badge = li.querySelector('.badge');
-          if (counts[user] > 0) {
-            badge.textContent = counts[user];
-            badge.classList.remove('hidden');
-            li.classList.add('unread');
-          } else {
-            badge.classList.add('hidden');
-            li.classList.remove('unread');
-          }
+      // Update every listed user so badges reset when a conversation is read
+      document.querySelectorAll('#userList li').forEach(li => {
+        const user = li.dataset.user;
+        const badge = li.querySelector('.badge');
+        const count = counts[user] || 0;
+        if (count > 0) {
+          badge.textContent = count;
+          badge.classList.remove('hidden');
+          li.classList.add('unread');
+        } else {
+          badge.classList.add('hidden');
+          li.classList.remove('unread');
         }
       });
     });
@@ -327,7 +328,13 @@ function markMessagesRead(user) {
   fetch(`${API_BASE_URL}/api/users/read/${user}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${currentUser.token}` }
-  }).then(() => loadUnreadCounts());
+  }).then(() => {
+    // Explicitly clear the local badge right away in case the
+    // network request fails so counts never linger incorrectly.
+    clearUnread(user);
+    // Refresh counts from the server to ensure both sides stay in sync
+    loadUnreadCounts();
+  });
 }
 
 // Increase the unread counter for a given user and update the badge
@@ -367,6 +374,8 @@ function selectUser(name) {
   currentChannel = null; // hide channel context
   clearUnread(name);
   loadMessages();
+  // Explicitly notify the server that all messages are now read
+  markMessagesRead(name);
 }
 
 // Verify the user is logged in before showing the dashboard

@@ -143,10 +143,24 @@ button {
   border-radius: 50%;
 }
 
+/* Style the sender name distinctly and leave space before the message text */
+.message .user {
+  font-weight: bold;
+  margin-right: 0.25rem; /* space after username */
+}
+
+/* Add a colon after the username that is not bold */
+.message .user::after {
+  content: ':';
+  font-weight: normal;
+  margin-right: 0.25rem;
+}
+
 .message .text {
   /* Allow the message body to consume remaining space so the
      timestamp and read receipt align to the right */
   flex: 1;
+  white-space: pre-wrap; /* keep spacing for multi-line messages */
 }
 
 .message .time {
