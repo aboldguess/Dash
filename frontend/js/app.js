@@ -140,8 +140,9 @@ function sendMessage() {
       createdAt: new Date().toISOString(),
       isRead: false
     };
-    // Optimistically render the message so it appears instantly
-    appendDirectMessage(dm);
+    // Send the message to the server which will broadcast it back
+    // to both participants. Rendering here would cause duplicates
+    // when the echoed event arrives.
     socket.emit('directMessage', dm);
   } else if (currentChannel) {
     // Channel message
@@ -150,7 +151,8 @@ function sendMessage() {
       text,
       channel: currentChannel
     };
-    appendMessage(msg);
+    // Send to the server and rely on the broadcast for rendering
+    // to avoid duplicate messages being displayed.
     socket.emit('messages', msg);
   }
 
