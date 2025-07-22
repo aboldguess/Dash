@@ -87,8 +87,12 @@ io.on('connection', socket => {
     try {
       const dm = new DirectMessage({ from, to, text });
       await dm.save();
-      // Emit the message to both participants
-      io.to(from).to(to).emit('directMessage', dm);
+      // Emit the message to both participants. Using `io.to()` with an array
+      // sends to the union of rooms, but chaining `.to()` calls would emit only
+      // to sockets that are in **both** rooms. Send separately so each user
+      // receives the direct message regardless of whether they share any rooms.
+      io.to(from).emit('directMessage', dm);
+      io.to(to).emit('directMessage', dm);
     } catch (err) {
       console.error('Failed to process direct message', err);
     }
