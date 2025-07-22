@@ -169,9 +169,14 @@ button {
 }
 
 .message .read {
-  color: #0a0;
+  color: #777; /* grey for delivered but not yet read */
   font-size: 0.8rem;
   margin-left: 4px;
+}
+
+/* When a message has been read show the ticks in green */
+.message .read.read-true {
+  color: #0a0;
 }
 
 /* Badge showing the number of unread direct messages */
