@@ -138,7 +138,9 @@ function sendMessage() {
       to: selectedUser,
       text,
       createdAt: new Date().toISOString(),
-      isRead: false
+      isRead: false,
+      // Will be updated once the recipient's client confirms delivery
+      isDelivered: false
     };
     // Send the message to the server which will broadcast it back
     // to both participants. Rendering here would cause duplicates
@@ -257,7 +259,7 @@ function appendDirectMessage(m) {
   // delivered.
   const outgoing = m.from === currentUser.username;
   const receipt = outgoing
-    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : '✔'}</span>`
+    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : (m.isDelivered ? '✔' : '')}</span>`
     : '';
 
   div.innerHTML = `
@@ -384,6 +386,10 @@ function checkAuth() {
     socket.emit('register', currentUser.username);
     socket.on('messages', msg => appendMessage(msg));
     socket.on('directMessage', dm => {
+      // Confirm receipt of the message so the sender can display a delivered tick
+      if (dm.to === currentUser.username) {
+        socket.emit('messageDelivered', { id: dm._id });
+      }
       // Only show incoming messages if conversation is open
       if (selectedUser === dm.from || selectedUser === dm.to) {
         appendDirectMessage(dm);
@@ -400,6 +406,12 @@ function checkAuth() {
     socket.on('messagesRead', data => {
       if (selectedUser === data.from) {
         // Reload counts and conversation so read indicators update
+        loadMessages();
+      }
+    });
+    // Update delivery receipts so single ticks show up
+    socket.on('messagesDelivered', data => {
+      if (selectedUser === data.to) {
         loadMessages();
       }
     });

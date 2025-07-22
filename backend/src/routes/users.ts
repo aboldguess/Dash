@@ -28,7 +28,17 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
   const other = req.params.user;
   const current = req.user!.username;
 
-  // Mark any unread messages from the other user as read before fetching
+  // Mark messages from the other user as delivered and read where applicable
+  const undelivered = await DirectMessage.find({
+    from: other,
+    to: current,
+    isDelivered: false
+  }).select('_id');
+  const deliverIds = undelivered.map(m => m._id);
+  if (deliverIds.length > 0) {
+    await DirectMessage.updateMany({ _id: { $in: deliverIds } }, { isDelivered: true });
+  }
+
   const unread = await DirectMessage.updateMany(
     { from: other, to: current, isRead: false },
     { isRead: true }
@@ -46,6 +56,12 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
   if (unread.modifiedCount > 0) {
     const io = req.app.get('io');
     io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+  }
+
+  // Inform sender about newly delivered messages
+  if (deliverIds.length > 0) {
+    const io = req.app.get('io');
+    io.to(other).emit('messagesDelivered', { ids: deliverIds, to: current });
   }
 
   res.json(msgs);
