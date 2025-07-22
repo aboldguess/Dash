@@ -259,14 +259,16 @@ function appendDirectMessage(m) {
   // delivered.
   const outgoing = m.from === currentUser.username;
   const receipt = outgoing
-    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : (m.isDelivered ? '✔' : '')}</span>`
+    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '&#10003;&#10003;' : (m.isDelivered ? '&#10003;' : '')}</span>`
     : '';
 
+  // Place the timestamp and read receipt at the end of the flex container so
+  // the layout resembles common chat apps.
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
     <span class="user">${m.from}</span>
-    <span class="time">${time}</span>
-    <span class="text">${m.text}</span>${receipt}`;
+    <span class="text">${m.text}</span>
+    <span class="time">${time}</span>${receipt}`;
   list.appendChild(div);
 }
 
@@ -365,6 +367,9 @@ function selectUser(name) {
   currentChannel = null; // hide channel context
   clearUnread(name);
   loadMessages();
+  // Explicitly mark any previously unread messages as read now that
+  // the conversation is open to keep badge counts in sync.
+  markMessagesRead(name);
 }
 
 // Verify the user is logged in before showing the dashboard
