@@ -251,10 +251,10 @@ function appendDirectMessage(m) {
   // Convert message timestamp to a relative description like "5 minutes ago"
   const time = formatRelativeTime(m.createdAt);
   div.className = 'message';
-  // Only show read receipts on messages sent by the current user
-  const receipt = m.from === currentUser.username
-    ? `<span class="read">${m.isRead ? '✔✔' : '✔'}</span>`
-    : '';
+  // Display a read receipt for all messages. For outgoing messages this
+  // indicates whether the other user has viewed it. For incoming messages it
+  // simply reflects that the current user has read the message.
+  const receipt = `<span class="read">${m.isRead ? '✔✔' : '✔'}</span>`;
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
     <span class="user">${m.from}</span>
