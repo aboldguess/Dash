@@ -56,6 +56,8 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
   if (unread.modifiedCount > 0) {
     const io = req.app.get('io');
     io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+    // Also notify the current user's other sessions so badges clear everywhere
+    io.to(current).emit('messagesRead', { from: other, count: unread.modifiedCount });
   }
 
   // Inform sender about newly delivered messages
@@ -120,6 +122,8 @@ router.post('/read/:user', async (req: AuthRequest, res) => {
   if (unread.modifiedCount > 0) {
     const io = req.app.get('io');
     io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+    // Notify all of the reader's sessions as well
+    io.to(current).emit('messagesRead', { from: other, count: unread.modifiedCount });
   }
 
   res.json({ count: unread.modifiedCount });
