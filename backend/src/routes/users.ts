@@ -2,7 +2,7 @@ import { Router } from 'express';
 import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
 import { User } from '../models/user';
 import { DirectMessage } from '../models/directMessage';
-import { onlineUsers } from '../presence';
+import { isOnline } from '../presence';
 
 const router = Router();
 
@@ -16,7 +16,7 @@ router.get('/', async (_req, res) => {
   const users = await User.find().select('username').exec();
   const result = users.map(u => ({
     username: u.username,
-    online: onlineUsers.has(u.username)
+    online: isOnline(u.username)
   }));
   res.json(result);
 });
@@ -28,20 +28,21 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
   const other = req.params.user;
   const current = req.user!.username;
 
-  // Find messages where the current user is either the sender or recipient
+  // Mark any unread messages from the other user as read before fetching
+  const unread = await DirectMessage.updateMany(
+    { from: other, to: current, isRead: false },
+    { isRead: true }
+  );
+
+  // Retrieve the conversation after updating read state
   const msgs = await DirectMessage.find({
     $or: [
       { from: current, to: other },
       { from: other, to: current }
     ]
   }).sort({ createdAt: 1 }).exec();
-  // Mark all messages sent to the current user as read
-  const unread = await DirectMessage.updateMany(
-    { from: other, to: current, isRead: false },
-    { isRead: true }
-  );
 
-  // Notify the sender that messages were read
+  // Notify the sender that their messages were read
   if (unread.modifiedCount > 0) {
     const io = req.app.get('io');
     io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });

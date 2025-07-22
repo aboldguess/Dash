@@ -18,7 +18,7 @@ import { connectDB } from './db';
 import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
 import { seedUsers } from './seedUsers';
-import { onlineUsers } from './presence';
+import { userConnected, userDisconnected } from './presence';
 
 const app = express();
 const PORT = process.env.PORT || 3000;
@@ -48,8 +48,8 @@ io.on('connection', socket => {
     socket.data.username = username;
     socket.join(username);
     // Remember this user is currently online
-    onlineUsers.add(username);
-    // Notify all clients that a user has come online
+    // Track presence for multi-tab support and broadcast status
+    userConnected(username);
     io.emit('userOnline', username);
   });
 
@@ -57,8 +57,11 @@ io.on('connection', socket => {
   socket.on('disconnect', () => {
     const username = socket.data.username;
     if (username) {
-      onlineUsers.delete(username);
-      io.emit('userOffline', username);
+      // Only emit offline when the last tab disconnects
+      const stillOnline = userDisconnected(username);
+      if (!stillOnline) {
+        io.emit('userOffline', username);
+      }
     }
   });
 
