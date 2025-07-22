@@ -84,4 +84,29 @@ router.get('/unread', async (req: AuthRequest, res) => {
   res.json(result);
 });
 
+/**
+ * Mark all direct messages from the specified user as read. This is used when
+ * a conversation is already open and new messages arrive via WebSocket. The
+ * sender will be notified via the existing `messagesRead` event so their
+ * client can update read receipts.
+ */
+router.post('/read/:user', async (req: AuthRequest, res) => {
+  const other = req.params.user;
+  const current = req.user!.username;
+
+  // Update unread messages and keep track of how many changed
+  const unread = await DirectMessage.updateMany(
+    { from: other, to: current, isRead: false },
+    { isRead: true }
+  );
+
+  // Inform the original sender that their messages were read
+  if (unread.modifiedCount > 0) {
+    const io = req.app.get('io');
+    io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+  }
+
+  res.json({ count: unread.modifiedCount });
+});
+
 export default router;

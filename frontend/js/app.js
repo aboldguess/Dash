@@ -251,10 +251,15 @@ function appendDirectMessage(m) {
   // Convert message timestamp to a relative description like "5 minutes ago"
   const time = formatRelativeTime(m.createdAt);
   div.className = 'message';
-  // Display a read receipt for all messages. For outgoing messages this
-  // indicates whether the other user has viewed it. For incoming messages it
-  // simply reflects that the current user has read the message.
-  const receipt = `<span class="read">${m.isRead ? '✔✔' : '✔'}</span>`;
+  // Only show read receipts on messages sent by the current user so incoming
+  // messages don't display confusing check marks. Two green ticks indicate the
+  // other user has read the message while a single grey tick means it was only
+  // delivered.
+  const outgoing = m.from === currentUser.username;
+  const receipt = outgoing
+    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : '✔'}</span>`
+    : '';
+
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
     <span class="user">${m.from}</span>
@@ -309,6 +314,16 @@ function loadUnreadCounts() {
         }
       });
     });
+}
+
+// Notify the server that all messages from the given user have been viewed.
+// This keeps unread counters in sync when new messages arrive while a
+// conversation is already open.
+function markMessagesRead(user) {
+  fetch(`${API_BASE_URL}/api/users/read/${user}`, {
+    method: 'POST',
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  }).then(() => loadUnreadCounts());
 }
 
 // Increase the unread counter for a given user and update the badge
@@ -372,6 +387,11 @@ function checkAuth() {
       // Only show incoming messages if conversation is open
       if (selectedUser === dm.from || selectedUser === dm.to) {
         appendDirectMessage(dm);
+        // If we are the recipient and the conversation is visible, notify
+        // the server immediately that we've read the new message.
+        if (dm.to === currentUser.username) {
+          markMessagesRead(dm.from);
+        }
       } else if (dm.to === currentUser.username) {
         incrementUnread(dm.from);
       }
