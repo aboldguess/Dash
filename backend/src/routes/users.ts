@@ -42,11 +42,9 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
     ]
   }).sort({ createdAt: 1 }).exec();
 
-  // Notify the sender that their messages were displayed
+  // Inform the reader's other sessions so unread counters stay in sync
   if (unseen.modifiedCount > 0) {
     const io = req.app.get('io');
-    io.to(other).emit('messagesSeen', { from: current, count: unseen.modifiedCount });
-    // Also notify the current user's other sessions so badges clear everywhere
     io.to(current).emit('messagesSeen', { from: other, count: unseen.modifiedCount });
   }
   res.json(msgs);
@@ -86,10 +84,8 @@ router.get('/unread', async (req: AuthRequest, res) => {
 });
 
 /**
- * Mark all direct messages from the specified user as seen. This is used when
- * a conversation is already open and new messages arrive via WebSocket. The
- * sender will be notified via the `messagesSeen` event so their client can
- * update read receipts.
+ * Mark all direct messages from the specified user as seen. This keeps unread
+ * counters accurate across a user's sessions.
  */
 router.post('/read/:user', async (req: AuthRequest, res) => {
   const other = req.params.user;
@@ -101,11 +97,9 @@ router.post('/read/:user', async (req: AuthRequest, res) => {
     { isSeen: true }
   );
 
-  // Inform the original sender that their messages were displayed
+  // Notify the reader's other sessions so counts remain consistent
   if (updated.modifiedCount > 0) {
     const io = req.app.get('io');
-    io.to(other).emit('messagesSeen', { from: current, count: updated.modifiedCount });
-    // Notify all of the reader's sessions as well
     io.to(current).emit('messagesSeen', { from: other, count: updated.modifiedCount });
   }
 

@@ -37,7 +37,7 @@ let currentUser = null;
 let socket = null;      // active Socket.IO connection
 let currentChannel = null; // id of the selected channel
 let selectedUser = null; // username of direct message recipient
-// Number of unread messages per user for quick badges
+// Track unread direct messages for each user so their names can be bolded
 let unreadCounts = {};
 let activeTool = 'messages'; // currently selected tool
 
@@ -257,24 +257,13 @@ function appendDirectMessage(m) {
   // Convert message timestamp to a relative description like "5 minutes ago"
   const time = formatRelativeTime(m.createdAt);
   div.className = 'message';
-  // Only show read receipts on messages sent by the current user. One grey
-  // indicator shows the message was delivered while a green indicator shows it
-  // has been read by the recipient.
-  const outgoing = m.from === currentUser.username;
-  const receipt = outgoing
-    // Display textual read receipts instead of tick icons so the interface is
-    // easier to debug. 'delivered' is shown until the recipient displays the
-    // message, after which it switches to 'read'.
-    ? `<span class="read${m.isSeen ? ' read-true' : ''}">${m.isSeen ? 'read' : 'delivered'}</span>`
-    : '';
 
-  // Place the timestamp and read receipt at the end of the flex container so
-  // the layout resembles common chat apps.
+  // Render sender avatar, name and message text. Read receipts are omitted.
   div.innerHTML = `
     <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
     <span class="user">${m.from}:</span>
     <span class="text">${m.text}</span>
-    <span class="time">${time}</span>${receipt}`;
+    <span class="time">${time}</span>`;
   list.appendChild(div);
 }
 
@@ -292,16 +281,18 @@ function loadUsers() {
         const li = document.createElement('li');
         li.dataset.user = u.username;
         li.className = u.online ? 'user-online' : 'user-offline';
-        li.innerHTML = `<span class="online-indicator"></span>${u.username}<span class="badge hidden"></span>`;
+        // Each user entry consists of an online indicator and the username.
+        // Unread message counts will be shown by bolding the name instead of badges.
+        li.innerHTML = `<span class="online-indicator"></span>${u.username}`;
         li.onclick = () => selectUser(u.username);
         list.appendChild(li);
       });
-      // After rendering users load unread counts to display badges
+      // After rendering users, load unread counts to bold names with unread messages
       loadUnreadCounts();
     });
 }
 
-// Fetch unread message counts and display badges next to users
+// Fetch unread message counts and bold names with unread messages
 function loadUnreadCounts() {
   fetch(`${API_BASE_URL}/api/users/unread`, {
     headers: { Authorization: `Bearer ${currentUser.token}` }
@@ -309,17 +300,13 @@ function loadUnreadCounts() {
     .then(r => r.json())
     .then(counts => {
       unreadCounts = counts;
-      // Update every listed user so badges reset when a conversation is read
+      // Update every listed user so their name is bolded when unread messages are present
       document.querySelectorAll('#userList li').forEach(li => {
         const user = li.dataset.user;
-        const badge = li.querySelector('.badge');
         const count = counts[user] || 0;
         if (count > 0) {
-          badge.textContent = count;
-          badge.classList.remove('hidden');
           li.classList.add('unread');
         } else {
-          badge.classList.add('hidden');
           li.classList.remove('unread');
         }
       });
@@ -336,14 +323,11 @@ function markMessagesSeen(user) {
   }).then(() => loadUnreadCounts());
 }
 
-// Increase the unread counter for a given user and update the badge
+// Increase the unread counter for a given user and bold their name
 function incrementUnread(user) {
   unreadCounts[user] = (unreadCounts[user] || 0) + 1;
   const li = document.querySelector(`#userList li[data-user="${user}"]`);
   if (li) {
-    const badge = li.querySelector('.badge');
-    badge.textContent = unreadCounts[user];
-    badge.classList.remove('hidden');
     li.classList.add('unread');
   }
 }
@@ -353,8 +337,6 @@ function clearUnread(user) {
   unreadCounts[user] = 0;
   const li = document.querySelector(`#userList li[data-user="${user}"]`);
   if (li) {
-    const badge = li.querySelector('.badge');
-    if (badge) badge.classList.add('hidden');
     li.classList.remove('unread');
   }
 }
@@ -372,9 +354,7 @@ function selectUser(name) {
   selectedUser = name;
   currentChannel = null; // hide channel context
   clearUnread(name);
-  // Load the conversation. Regardless of success or failure, inform the
-  // server that we've displayed these messages so read receipts and counters
-  // update correctly even if the history fails to render.
+  // Load the conversation and inform the server so unread counters update
   loadMessages().finally(() => markMessagesSeen(name));
 }
 
@@ -409,14 +389,9 @@ function checkAuth() {
         incrementUnread(dm.from);
       }
     });
-    // Receive seen receipt updates for sent messages
-    socket.on('messagesSeen', data => {
-      // Refresh badge counts in case another tab marked messages as seen
+    // Refresh unread counts when other tabs mark messages as read
+    socket.on('messagesSeen', () => {
       loadUnreadCounts();
-      if (selectedUser === data.from) {
-        // If this conversation is visible update the chat log as well
-        loadMessages();
-      }
     });
     // Update presence indicators in real time
     socket.on('userOnline', name => handlePresence(name, true));
