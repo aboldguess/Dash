@@ -197,13 +197,16 @@ function changeChannel() {
   loadMessages();
 }
 
+// Retrieve chat history for the active channel or direct conversation. The
+// returned promise resolves once messages have been rendered so callers can
+// chain additional actions.
 function loadMessages() {
   const list = document.getElementById('messageList');
   list.innerHTML = '';
 
   if (selectedUser) {
     // Load direct messages with the selected user
-    fetch(`${API_BASE_URL}/api/users/conversation/${selectedUser}`, {
+    return fetch(`${API_BASE_URL}/api/users/conversation/${selectedUser}`, {
       headers: { Authorization: `Bearer ${currentUser.token}` }
     })
       .then(r => r.json())
@@ -214,10 +217,12 @@ function loadMessages() {
       });
   } else if (currentChannel) {
     // Retrieve the latest chat messages for the active channel
-    fetch(`${API_BASE_URL}/api/messages/channel/${currentChannel}`)
+    return fetch(`${API_BASE_URL}/api/messages/channel/${currentChannel}`)
       .then(r => r.json())
       .then(msgs => msgs.forEach(appendMessage));
   }
+
+  return Promise.resolve();
 }
 
 // Helper to add a single message element to the chat log
@@ -364,7 +369,9 @@ function selectUser(name) {
   selectedUser = name;
   currentChannel = null; // hide channel context
   clearUnread(name);
-  loadMessages();
+  // Load the conversation then explicitly notify the server that we've
+  // displayed these messages to ensure read receipts and counters update.
+  loadMessages().then(() => markMessagesSeen(name));
 }
 
 // Verify the user is logged in before showing the dashboard
