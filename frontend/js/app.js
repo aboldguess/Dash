@@ -372,9 +372,10 @@ function selectUser(name) {
   selectedUser = name;
   currentChannel = null; // hide channel context
   clearUnread(name);
-  // Load the conversation then explicitly notify the server that we've
-  // displayed these messages to ensure read receipts and counters update.
-  loadMessages().then(() => markMessagesSeen(name));
+  // Load the conversation. Regardless of success or failure, inform the
+  // server that we've displayed these messages so read receipts and counters
+  // update correctly even if the history fails to render.
+  loadMessages().finally(() => markMessagesSeen(name));
 }
 
 // Verify the user is logged in before showing the dashboard
