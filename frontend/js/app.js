@@ -258,11 +258,14 @@ function appendDirectMessage(m) {
   const time = formatRelativeTime(m.createdAt);
   div.className = 'message';
   // Only show read receipts on messages sent by the current user. One grey
-  // tick means the server stored the message while two ticks turn green once
-  // the recipient has displayed it.
+  // indicator shows the message was delivered while a green indicator shows it
+  // has been read by the recipient.
   const outgoing = m.from === currentUser.username;
   const receipt = outgoing
-    ? `<span class="read${m.isSeen ? ' read-true' : ''}">${m.isSeen ? '✔✔' : '✔'}</span>`
+    // Display textual read receipts instead of tick icons so the interface is
+    // easier to debug. 'delivered' is shown until the recipient displays the
+    // message, after which it switches to 'read'.
+    ? `<span class="read${m.isSeen ? ' read-true' : ''}">${m.isSeen ? 'read' : 'delivered'}</span>`
     : '';
 
   // Place the timestamp and read receipt at the end of the flex container so
