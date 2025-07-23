@@ -14,6 +14,7 @@ import programRoutes from './routes/programs';
 import timesheetRoutes from './routes/timesheets';
 import leaveRoutes from './routes/leaves';
 import userRoutes from './routes/users';
+import teamRoutes from './routes/teams';
 import { connectDB } from './db';
 import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
@@ -114,6 +115,7 @@ app.use('/api/programs', programRoutes);
 app.use('/api/timesheets', timesheetRoutes);
 app.use('/api/leaves', leaveRoutes);
 app.use('/api/users', userRoutes);
+app.use('/api/teams', teamRoutes);
 
 // Serve static frontend files. The path is resolved relative to the compiled
 // JavaScript location so it works when running from the 'dist' directory.

@@ -3,7 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Role } from '../models/user';
 
 export interface AuthRequest extends Request {
-  user?: { id: string; username: string; role: Role };
+  user?: { id: string; username: string; role: Role; team?: string };
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
@@ -25,8 +25,14 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
       id: string;
       username: string;
       role: Role;
+      team?: string;
     };
-    req.user = { id: payload.id, username: payload.username, role: payload.role };
+    req.user = {
+      id: payload.id,
+      username: payload.username,
+      role: payload.role,
+      team: payload.team
+    };
     next();
   } catch (err) {
     return res.status(401).json({ message: 'Invalid token' });

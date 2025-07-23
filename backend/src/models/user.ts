@@ -1,4 +1,4 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 export type Role = 'user' | 'teamAdmin' | 'admin';
 
@@ -9,12 +9,19 @@ export interface IUser extends Document {
   username: string;
   password: string;
   role: Role;
+  /** Reference to the team this user belongs to */
+  team?: Types.ObjectId;
+  /** Users from other teams allowed to message this user */
+  allowedContacts: Types.ObjectId[];
 }
 
 const UserSchema = new Schema<IUser>({
   username: { type: String, required: true, unique: true },
   password: { type: String, required: true },
-  role: { type: String, enum: ['user', 'teamAdmin', 'admin'], default: 'user' }
+  role: { type: String, enum: ['user', 'teamAdmin', 'admin'], default: 'user' },
+  team: { type: Schema.Types.ObjectId, ref: 'Team' },
+  // Cross-team contacts who may exchange direct messages
+  allowedContacts: [{ type: Schema.Types.ObjectId, ref: 'User' }]
 });
 
 export const User = model<IUser>('User', UserSchema);
