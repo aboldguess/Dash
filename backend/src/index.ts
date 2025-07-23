@@ -98,20 +98,6 @@ io.on('connection', socket => {
     }
   });
 
-  // Recipient confirms a message reached their device
-  socket.on('messageDelivered', async ({ id }) => {
-    try {
-      const msg = await DirectMessage.findById(id);
-      if (msg && !msg.isDelivered) {
-        msg.isDelivered = true;
-        await msg.save();
-        // Inform the sender that delivery was successful
-        io.to(msg.from).emit('messagesDelivered', { ids: [id], to: msg.to });
-      }
-    } catch (err) {
-      console.error('Failed to process delivery receipt', err);
-    }
-  });
 });
 
 // Middleware configuration

@@ -28,20 +28,10 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
   const other = req.params.user;
   const current = req.user!.username;
 
-  // Mark messages from the other user as delivered and read where applicable
-  const undelivered = await DirectMessage.find({
-    from: other,
-    to: current,
-    isDelivered: false
-  }).select('_id');
-  const deliverIds = undelivered.map(m => m._id);
-  if (deliverIds.length > 0) {
-    await DirectMessage.updateMany({ _id: { $in: deliverIds } }, { isDelivered: true });
-  }
-
-  const unread = await DirectMessage.updateMany(
-    { from: other, to: current, isRead: false },
-    { isRead: true }
+  // Mark messages from the other user as seen once this conversation is opened
+  const unseen = await DirectMessage.updateMany(
+    { from: other, to: current, isSeen: false },
+    { isSeen: true }
   );
 
   // Retrieve the conversation after updating read state
@@ -52,20 +42,13 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
     ]
   }).sort({ createdAt: 1 }).exec();
 
-  // Notify the sender that their messages were read
-  if (unread.modifiedCount > 0) {
+  // Notify the sender that their messages were displayed
+  if (unseen.modifiedCount > 0) {
     const io = req.app.get('io');
-    io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+    io.to(other).emit('messagesSeen', { from: current, count: unseen.modifiedCount });
     // Also notify the current user's other sessions so badges clear everywhere
-    io.to(current).emit('messagesRead', { from: other, count: unread.modifiedCount });
+    io.to(current).emit('messagesSeen', { from: other, count: unseen.modifiedCount });
   }
-
-  // Inform sender about newly delivered messages
-  if (deliverIds.length > 0) {
-    const io = req.app.get('io');
-    io.to(other).emit('messagesDelivered', { ids: deliverIds, to: current });
-  }
-
   res.json(msgs);
 });
 
@@ -90,7 +73,7 @@ router.get('/unread', async (req: AuthRequest, res) => {
   const current = req.user!.username;
 
   const counts = await DirectMessage.aggregate([
-    { $match: { to: current, isRead: false } },
+    { $match: { to: current, isSeen: false } },
     { $group: { _id: '$from', count: { $sum: 1 } } }
   ]).exec();
 
@@ -103,30 +86,30 @@ router.get('/unread', async (req: AuthRequest, res) => {
 });
 
 /**
- * Mark all direct messages from the specified user as read. This is used when
+ * Mark all direct messages from the specified user as seen. This is used when
  * a conversation is already open and new messages arrive via WebSocket. The
- * sender will be notified via the existing `messagesRead` event so their
- * client can update read receipts.
+ * sender will be notified via the `messagesSeen` event so their client can
+ * update read receipts.
  */
 router.post('/read/:user', async (req: AuthRequest, res) => {
   const other = req.params.user;
   const current = req.user!.username;
 
   // Update unread messages and keep track of how many changed
-  const unread = await DirectMessage.updateMany(
-    { from: other, to: current, isRead: false },
-    { isRead: true }
+  const updated = await DirectMessage.updateMany(
+    { from: other, to: current, isSeen: false },
+    { isSeen: true }
   );
 
-  // Inform the original sender that their messages were read
-  if (unread.modifiedCount > 0) {
+  // Inform the original sender that their messages were displayed
+  if (updated.modifiedCount > 0) {
     const io = req.app.get('io');
-    io.to(other).emit('messagesRead', { from: current, count: unread.modifiedCount });
+    io.to(other).emit('messagesSeen', { from: current, count: updated.modifiedCount });
     // Notify all of the reader's sessions as well
-    io.to(current).emit('messagesRead', { from: other, count: unread.modifiedCount });
+    io.to(current).emit('messagesSeen', { from: other, count: updated.modifiedCount });
   }
 
-  res.json({ count: unread.modifiedCount });
+  res.json({ count: updated.modifiedCount });
 });
 
 export default router;

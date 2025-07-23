@@ -138,9 +138,8 @@ function sendMessage() {
       to: selectedUser,
       text,
       createdAt: new Date().toISOString(),
-      isRead: false,
-      // Will be updated once the recipient's client confirms delivery
-      isDelivered: false
+      // This flag will be updated once the recipient actually views the message
+      isSeen: false
     };
     // Send the message to the server which will broadcast it back
     // to both participants. Rendering here would cause duplicates
@@ -210,7 +209,7 @@ function loadMessages() {
       .then(r => r.json())
       .then(msgs => {
         msgs.forEach(appendDirectMessage);
-        // Reload unread counts as messages have been marked read
+        // Reload unread counts as messages have been marked seen
         loadUnreadCounts();
       });
   } else if (currentChannel) {
@@ -253,13 +252,12 @@ function appendDirectMessage(m) {
   // Convert message timestamp to a relative description like "5 minutes ago"
   const time = formatRelativeTime(m.createdAt);
   div.className = 'message';
-  // Only show read receipts on messages sent by the current user so incoming
-  // messages don't display confusing check marks. Two green ticks indicate the
-  // other user has read the message while a single grey tick means it was only
-  // delivered.
+  // Only show read receipts on messages sent by the current user. One grey
+  // tick means the server stored the message while two ticks turn green once
+  // the recipient has displayed it.
   const outgoing = m.from === currentUser.username;
   const receipt = outgoing
-    ? `<span class="read${m.isRead ? ' read-true' : ''}">${m.isRead ? '✔✔' : (m.isDelivered ? '✔' : '')}</span>`
+    ? `<span class="read${m.isSeen ? ' read-true' : ''}">${m.isSeen ? '✔✔' : '✔'}</span>`
     : '';
 
   // Place the timestamp and read receipt at the end of the flex container so
@@ -320,10 +318,10 @@ function loadUnreadCounts() {
     });
 }
 
-// Notify the server that all messages from the given user have been viewed.
+// Notify the server that all messages from the given user have been displayed.
 // This keeps unread counters in sync when new messages arrive while a
 // conversation is already open.
-function markMessagesRead(user) {
+function markMessagesSeen(user) {
   fetch(`${API_BASE_URL}/api/users/read/${user}`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${currentUser.token}` }
@@ -388,34 +386,24 @@ function checkAuth() {
     socket.emit('register', currentUser.username);
     socket.on('messages', msg => appendMessage(msg));
     socket.on('directMessage', dm => {
-      // Confirm receipt of the message so the sender can display a delivered tick
-      if (dm.to === currentUser.username) {
-        socket.emit('messageDelivered', { id: dm._id });
-      }
       // Only show incoming messages if conversation is open
       if (selectedUser === dm.from || selectedUser === dm.to) {
         appendDirectMessage(dm);
         // If we are the recipient and the conversation is visible, notify
-        // the server immediately that we've read the new message.
+        // the server immediately that we've displayed the new message.
         if (dm.to === currentUser.username) {
-          markMessagesRead(dm.from);
+          markMessagesSeen(dm.from);
         }
       } else if (dm.to === currentUser.username) {
         incrementUnread(dm.from);
       }
     });
-    // Receive read receipt updates for sent messages
-    socket.on('messagesRead', data => {
-      // Refresh badge counts in case another tab marked messages as read
+    // Receive seen receipt updates for sent messages
+    socket.on('messagesSeen', data => {
+      // Refresh badge counts in case another tab marked messages as seen
       loadUnreadCounts();
       if (selectedUser === data.from) {
         // If this conversation is visible update the chat log as well
-        loadMessages();
-      }
-    });
-    // Update delivery receipts so single ticks show up
-    socket.on('messagesDelivered', data => {
-      if (selectedUser === data.to) {
         loadMessages();
       }
     });
