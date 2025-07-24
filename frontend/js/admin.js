@@ -1,31 +1,34 @@
 /**
- * Functions supporting the simple admin panel. The panel relies on the
- * existing authentication logic from app.js to ensure only admins can
- * access the configuration endpoints.
+ * Enhanced admin dashboard logic. Builds on the shared helpers in app.js to
+ * allow admins to manage configuration values, teams and users directly from
+ * the browser. Each section of admin.html is populated via the functions below.
  */
 
-function initAdmin() {
-  // Reuse the common auth check. This sets the global currentUser object.
-  checkAuth();
+// Cached list of teams so multiple panels can reference the same data
+let teamsCache = [];
 
-  // Redirect non-admins back to the dashboard for safety.
+function initAdmin() {
+  // Verify the user is logged in and has the correct role
+  checkAuth();
   if (!currentUser || currentUser.role !== 'admin') {
     window.location.href = 'dashboard.html';
     return;
   }
 
-  // Fetch and display the current configuration values.
+  // Initial data fetches
   loadConfig();
-
-  // Show the list of API endpoints so future functionality can be wired up
-  // without digging through backend source files.
-  renderEndpoints();
+  loadTeams();
+  loadAllUsers();
 }
 
-/**
- * Retrieve all stored configuration key/value pairs from the backend and
- * render them in a simple list.
- */
+/** Show the requested admin section and hide the others. */
+function selectAdminSection(id) {
+  document.querySelectorAll('.admin-section').forEach(sec => sec.classList.add('hidden'));
+  const active = document.getElementById(id);
+  if (active) active.classList.remove('hidden');
+}
+
+/** Retrieve configuration items from the backend and display them. */
 function loadConfig() {
   fetch(`${API_BASE_URL}/api/admin/config`, {
     headers: { Authorization: `Bearer ${currentUser.token}` }
@@ -42,15 +45,11 @@ function loadConfig() {
     });
 }
 
-/**
- * Submit a new configuration value or update an existing one. After the
- * request completes the list is reloaded so the UI reflects the change.
- */
+/** Create or update a configuration value. */
 function createConfig(e) {
   e.preventDefault();
   const key = document.getElementById('configKey').value;
   const value = document.getElementById('configValue').value;
-
   fetch(`${API_BASE_URL}/api/admin/config`, {
     method: 'POST',
     headers: {
@@ -58,40 +57,148 @@ function createConfig(e) {
       Authorization: `Bearer ${currentUser.token}`
     },
     body: JSON.stringify({ key, value })
+  }).then(() => {
+    document.getElementById('configKey').value = '';
+    document.getElementById('configValue').value = '';
+    loadConfig();
+  });
+}
+
+/** Fetch all teams and update the teams table and user creation form. */
+function loadTeams() {
+  fetch(`${API_BASE_URL}/api/teams`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
   })
-    .then(() => {
-      document.getElementById('configKey').value = '';
-      document.getElementById('configValue').value = '';
-      loadConfig();
+    .then(r => r.json())
+    .then(list => {
+      teamsCache = list;
+      renderTeamTable();
+      populateTeamSelect();
     });
 }
 
-/**
- * Display a list of available backend endpoints. This provides visibility
- * into the API surface and acts as a placeholder for more advanced admin
- * functionality we may implement later.
- */
-function renderEndpoints() {
-  const endpoints = [
-    '/api/messages',
-    '/api/channels',
-    '/api/crm',
-    '/api/projects',
-    '/api/programs',
-    '/api/timesheets',
-    '/api/leaves',
-    '/api/users',
-    '/api/teams',
-    '/api/admin'
-  ];
-
-  const placeholder = document.getElementById('endpointPlaceholder');
-  placeholder.innerHTML = '';
-  const ul = document.createElement('ul');
-  endpoints.forEach(e => {
-    const li = document.createElement('li');
-    li.textContent = e;
-    ul.appendChild(li);
+/** Fill the team select element used when creating users. */
+function populateTeamSelect() {
+  const select = document.getElementById('newUserTeam');
+  select.innerHTML = '';
+  teamsCache.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t._id;
+    opt.textContent = t.name;
+    select.appendChild(opt);
   });
-  placeholder.appendChild(ul);
 }
+
+/** Render the team table with a manage button for each row. */
+function renderTeamTable() {
+  const table = document.getElementById('teamTable');
+  table.innerHTML = '';
+  const header = document.createElement('tr');
+  header.innerHTML = '<th>Name</th><th>Domains</th><th>Seats</th><th></th>';
+  table.appendChild(header);
+  teamsCache.forEach(t => {
+    const row = document.createElement('tr');
+    row.innerHTML = `
+      <td>${t.name}</td>
+      <td>${t.domains.join(', ')}</td>
+      <td>${t.seats}</td>
+      <td><button onclick="showTeamDetails('${t._id}')">Manage</button></td>`;
+    table.appendChild(row);
+  });
+}
+
+/** Create a new team from form values. */
+function createTeam(e) {
+  e.preventDefault();
+  const name = document.getElementById('teamName').value;
+  const domains = document.getElementById('teamDomains').value
+    .split(',')
+    .map(d => d.trim())
+    .filter(Boolean);
+  const seats = parseInt(document.getElementById('teamSeats').value || '0', 10);
+  fetch(`${API_BASE_URL}/api/teams`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ name, domains, seats })
+  }).then(() => {
+    document.getElementById('teamName').value = '';
+    document.getElementById('teamDomains').value = '';
+    document.getElementById('teamSeats').value = '5';
+    loadTeams();
+  });
+}
+
+/** Show editable details for a team including member list. */
+function showTeamDetails(id) {
+  const team = teamsCache.find(t => t._id === id);
+  if (!team) return;
+  fetch(`${API_BASE_URL}/api/teams/${id}/members`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(members => {
+      const container = document.getElementById('teamDetails');
+      container.classList.remove('hidden');
+      container.innerHTML = `
+        <h3>${team.name}</h3>
+        <label>Seats <input id="editSeats" type="number" value="${team.seats}"></label>
+        <button onclick="saveTeam('${id}')">Save</button>
+        <h4>Members</h4>
+        <ul>${members.map(m => `<li>${m.username} (${m.role})</li>`).join('')}</ul>`;
+    });
+}
+
+/** Persist updated seat count for the given team. */
+function saveTeam(id) {
+  const seats = parseInt(document.getElementById('editSeats').value || '0', 10);
+  fetch(`${API_BASE_URL}/api/teams/${id}`, {
+    method: 'PATCH',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ seats })
+  }).then(() => loadTeams());
+}
+
+/** Create a new user via the signup endpoint and refresh lists. */
+function createUser(e) {
+  e.preventDefault();
+  const username = document.getElementById('newUsername').value;
+  const password = document.getElementById('newPassword').value;
+  const teamId = document.getElementById('newUserTeam').value;
+  fetch(`${API_BASE_URL}/api/auth/signup`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ username, password, teamId })
+  }).then(() => {
+    document.getElementById('newUsername').value = '';
+    document.getElementById('newPassword').value = '';
+    loadTeams();
+    loadAllUsers();
+  });
+}
+
+/** Load members from all teams and render them grouped by team. */
+function loadAllUsers() {
+  const list = document.getElementById('userList');
+  list.innerHTML = '';
+  const promises = teamsCache.map(t =>
+    fetch(`${API_BASE_URL}/api/teams/${t._id}/members`, {
+      headers: { Authorization: `Bearer ${currentUser.token}` }
+    }).then(r => r.json().then(m => ({ team: t.name, members: m })))
+  );
+  Promise.all(promises).then(all => {
+    all.forEach(entry => {
+      const div = document.createElement('div');
+      div.innerHTML = `<h3>${entry.team}</h3><ul>${entry.members
+        .map(m => `<li>${m.username} (${m.role})</li>`)
+        .join('')}</ul>`;
+      list.appendChild(div);
+    });
+  });
+}
+
