@@ -89,6 +89,8 @@ function login() {
       // Persist auth details so other pages can verify login state
       localStorage.setItem('token', u.token);
       localStorage.setItem('username', u.username);
+      // Remember the role so pages can conditionally display admin features
+      localStorage.setItem('role', u.role);
       // Store calculated gravatar URL so it can be reused on the dashboard
       localStorage.setItem('avatarUrl', getGravatarUrl(u.username));
 
@@ -362,6 +364,7 @@ function selectUser(name) {
 function checkAuth() {
   const token = localStorage.getItem('token');
   const username = localStorage.getItem('username');
+  const role = localStorage.getItem('role');
   if (!token || !username) {
     // Not authenticated - return to login page
     window.location.href = 'login.html';
@@ -369,7 +372,18 @@ function checkAuth() {
   }
 
   const avatarUrl = localStorage.getItem('avatarUrl') || getGravatarUrl(username);
-  currentUser = { username, token, avatarUrl };
+  // Store all relevant details for convenience in other functions
+  currentUser = { username, token, avatarUrl, role };
+
+  // Display the admin navigation link only when the logged in user is an admin
+  const adminLink = document.getElementById('adminLink');
+  if (adminLink) {
+    if (role === 'admin') {
+      adminLink.classList.remove('hidden');
+    } else {
+      adminLink.classList.add('hidden');
+    }
+  }
 
   // After setting currentUser, connect to Socket.IO and load channels/messages
   loadSocketIo().then(() => {
@@ -406,6 +420,7 @@ function logout() {
   localStorage.removeItem('token');
   localStorage.removeItem('username');
   localStorage.removeItem('avatarUrl');
+  localStorage.removeItem('role');
   if (socket) {
     socket.disconnect();
   }

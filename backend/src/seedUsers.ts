@@ -22,6 +22,30 @@ export async function seedUsers(): Promise<void> {
     )
   ]);
 
+  // Create the default admin team used for the seeded admin account. This team
+  // has no domain restrictions and a single license seat since it is only
+  // intended for the administrator user.
+  const adminTeam = await Team.findOneAndUpdate(
+    { name: 'Admins' },
+    { name: 'Admins', domains: [], seats: 1 },
+    { upsert: true, new: true }
+  );
+
+  // Ensure an administrator user exists so the admin panel can be accessed.
+  // The username/password are fixed for demo purposes only and should be
+  // changed in production deployments.
+  if (!(await User.exists({ username: 'admin' }))) {
+    const hashed = await bcrypt.hash('Admin12345', 10);
+    const adminUser = new User({
+      username: 'admin',
+      password: hashed,
+      role: 'admin',
+      team: adminTeam._id,
+      allowedContacts: []
+    });
+    await adminUser.save();
+  }
+
   const names = ['jack', 'jill', 'alice', 'bob', 'eve'];
   for (const username of names) {
     // Only create the account if it doesn't already exist

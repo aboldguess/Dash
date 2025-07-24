@@ -81,3 +81,13 @@ endpoints:
 - `GET /api/admin/config` &ndash; list all stored configuration values
 
 These endpoints require an authenticated user with the `admin` role.
+
+The repository seeds a default administrator account for demo purposes:
+
+- **Username:** `admin`
+- **Password:** `Admin12345`
+
+After logging in with this account, an admin panel is available at
+`/admin.html` where configuration values can be managed through a basic GUI
+and a list of backend endpoints provides placeholders for additional
+functionality.
