@@ -63,6 +63,10 @@ header nav a {
   background: #555;
 }
 
+#gantt {
+  margin-top: 1rem;
+}
+
 /* Contextual sidebar shown for the selected tool */
 .context-sidebar {
   width: 200px;

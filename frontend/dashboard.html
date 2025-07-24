@@ -23,6 +23,7 @@
       <ul>
         <li id="tool-messages" class="active" onclick="selectTool('messages')">💬</li>
         <li id="tool-crm" onclick="selectTool('crm')">CRM</li>
+        <li id="tool-projects" onclick="selectTool('projects')">Projects</li>
         <li id="tool-timesheets" onclick="selectTool('timesheets')">TS</li>
         <li id="tool-recruit" onclick="selectTool('recruit')">HR</li>
       </ul>
@@ -58,6 +59,22 @@
           <button type="submit">Save</button>
         </form>
         <table class="admin-table" id="contactTable"></table>
+      </section>
+      <section id="projects" class="hidden">
+        <h2>Projects</h2>
+        <form id="projectForm" onsubmit="saveProject(event)">
+          <input id="projectId" type="hidden" />
+          <input id="projectName" placeholder="Project name" required />
+          <input id="projectOwner" placeholder="Owner" required />
+          <input id="projectStart" type="date" />
+          <input id="projectEnd" type="date" />
+          <input id="projectHours" type="number" placeholder="Hours" />
+          <input id="projectCost" type="number" placeholder="£ Cost" />
+          <textarea id="projectDesc" placeholder="Description"></textarea>
+          <button type="submit">Save</button>
+        </form>
+        <div id="gantt"></div>
+        <table class="admin-table" id="projectTable"></table>
       </section>
       <section id="timesheets" class="hidden">
         <h2>Timesheets</h2>

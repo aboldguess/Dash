@@ -68,6 +68,11 @@ function selectTool(tool) {
     resetContactForm();
   }
 
+  if (tool === 'projects') {
+    loadProjects();
+    resetProjectForm();
+  }
+
   // Display the relevant section in the main area
   document.querySelectorAll('.content > section').forEach(sec => sec.classList.add('hidden'));
   const activeSection = document.getElementById(tool);
@@ -527,6 +532,122 @@ function deleteContact(id) {
     method: 'DELETE',
     headers: { Authorization: `Bearer ${currentUser.token}` }
   }).then(() => loadContacts());
+}
+
+// ----------------------- Project helpers -----------------------
+
+// Clear project form inputs
+function resetProjectForm() {
+  document.getElementById('projectId').value = '';
+  document.getElementById('projectName').value = '';
+  document.getElementById('projectOwner').value = '';
+  document.getElementById('projectStart').value = '';
+  document.getElementById('projectEnd').value = '';
+  document.getElementById('projectHours').value = '';
+  document.getElementById('projectCost').value = '';
+  document.getElementById('projectDesc').value = '';
+}
+
+// Retrieve all projects and render them along with a simple Gantt chart
+function loadProjects() {
+  fetch(`${API_BASE_URL}/api/projects`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(list => {
+      const table = document.getElementById('projectTable');
+      table.innerHTML = '';
+      const header = document.createElement('tr');
+      header.innerHTML = '<th>Name</th><th>Owner</th><th>Status</th><th></th>';
+      table.appendChild(header);
+      const tasks = [];
+      list.forEach(p => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${p.name}</td>
+          <td>${p.owner}</td>
+          <td>${p.status}</td>
+          <td><button onclick="editProject('${p._id}')">Edit</button></td>`;
+        table.appendChild(row);
+        // Collect tasks for gantt chart
+        if (p.workPackages) {
+          p.workPackages.forEach(wp => {
+            wp.tasks.forEach(t => {
+              tasks.push({
+                id: t._id,
+                name: t.name,
+                start: t.start,
+                end: t.end
+              });
+            });
+          });
+        }
+      });
+
+      renderGantt(tasks);
+    });
+}
+
+// Populate form for editing a project
+function editProject(id) {
+  fetch(`${API_BASE_URL}/api/projects/${id}`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(p => {
+      document.getElementById('projectId').value = p._id;
+      document.getElementById('projectName').value = p.name;
+      document.getElementById('projectOwner').value = p.owner;
+      document.getElementById('projectStart').value = p.start ? p.start.substr(0,10) : '';
+      document.getElementById('projectEnd').value = p.end ? p.end.substr(0,10) : '';
+      document.getElementById('projectHours').value = p.hours || '';
+      document.getElementById('projectCost').value = p.cost || '';
+      document.getElementById('projectDesc').value = p.description || '';
+    });
+}
+
+// Persist project details
+function saveProject(e) {
+  e.preventDefault();
+  const id = document.getElementById('projectId').value;
+  const name = document.getElementById('projectName').value;
+  const owner = document.getElementById('projectOwner').value;
+  const start = document.getElementById('projectStart').value;
+  const end = document.getElementById('projectEnd').value;
+  const hours = document.getElementById('projectHours').value;
+  const cost = document.getElementById('projectCost').value;
+  const description = document.getElementById('projectDesc').value;
+  fetch(`${API_BASE_URL}/api/projects`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ id, name, owner, start, end, hours, cost, description })
+  }).then(() => {
+    resetProjectForm();
+    loadProjects();
+  });
+}
+
+// Basic gantt rendering using the frappe-gantt library
+function renderGantt(tasks) {
+  const area = document.getElementById('gantt');
+  area.innerHTML = '';
+  if (tasks.length === 0) return;
+  // Ensure the library is loaded via CDN
+  if (typeof Gantt === 'undefined') {
+    const link = document.createElement('link');
+    link.rel = 'stylesheet';
+    link.href = 'https://unpkg.com/frappe-gantt/dist/frappe-gantt.css';
+    document.head.appendChild(link);
+    const script = document.createElement('script');
+    script.src = 'https://unpkg.com/frappe-gantt/dist/frappe-gantt.min.js';
+    script.onload = () => new Gantt(area, tasks);
+    document.body.appendChild(script);
+  } else {
+    new Gantt(area, tasks);
+  }
 }
 
 /**
