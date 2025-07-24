@@ -215,3 +215,34 @@ button {
   text-align: left;
 }
 
+
+/* Layout for the social page with a sidebar of people */
+.social-layout {
+  display: flex;
+  height: calc(100vh - 60px);
+}
+
+.social-sidebar {
+  width: 200px;
+  background: #f4f4f4;
+  padding: 1rem;
+  box-sizing: border-box;
+  border-right: 1px solid #ddd;
+}
+
+.social-sidebar ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.post {
+  border-bottom: 1px solid #ccc;
+  padding: 0.5rem 0;
+}
+
+.post .time {
+  color: #777;
+  font-size: 0.8rem;
+  margin-left: 0.5rem;
+}
