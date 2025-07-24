@@ -13,6 +13,15 @@ router.get('/', async (_, res) => {
   res.json(list);
 });
 
+// Retrieve a single contact by identifier
+router.get('/:id', async (req, res) => {
+  const contact = await Contact.findById(req.params.id).exec();
+  if (!contact) {
+    return res.status(404).json({ message: 'Contact not found' });
+  }
+  res.json(contact);
+});
+
 // Add a new contact or update an existing one
 router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const { id, ...data } = req.body;
@@ -26,6 +35,15 @@ router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
   const contact = new Contact(data);
   await contact.save();
   res.status(201).json(contact);
+});
+
+// Permanently remove a contact
+router.delete('/:id', requireRole(['admin', 'teamAdmin']), async (req, res) => {
+  const del = await Contact.findByIdAndDelete(req.params.id).exec();
+  if (!del) {
+    return res.status(404).json({ message: 'Contact not found' });
+  }
+  res.json({ message: 'Contact deleted' });
 });
 
 export default router;

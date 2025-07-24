@@ -48,7 +48,14 @@
       <!-- Placeholder sections for future tools -->
       <section id="crm" class="hidden">
         <h2>CRM</h2>
-        <p>CRM functionality coming soon.</p>
+        <form id="contactForm" onsubmit="saveContact(event)">
+          <input id="contactId" type="hidden" />
+          <input id="contactName" placeholder="Name" required />
+          <input id="contactEmail" placeholder="Email" required />
+          <input id="contactPhone" placeholder="Phone" required />
+          <button type="submit">Save</button>
+        </form>
+        <table class="admin-table" id="contactTable"></table>
       </section>
       <section id="timesheets" class="hidden">
         <h2>Timesheets</h2>

@@ -63,6 +63,11 @@ function selectTool(tool) {
     context.classList.add('hidden');
   }
 
+  if (tool === 'crm') {
+    loadContacts();
+    resetContactForm();
+  }
+
   // Display the relevant section in the main area
   document.querySelectorAll('.content > section').forEach(sec => sec.classList.add('hidden'));
   const activeSection = document.getElementById(tool);
@@ -434,6 +439,85 @@ function logout() {
     socket.disconnect();
   }
   window.location.href = 'login.html';
+}
+
+// ----------------------- CRM helpers -----------------------
+
+// Clear the contact form inputs
+function resetContactForm() {
+  document.getElementById('contactId').value = '';
+  document.getElementById('contactName').value = '';
+  document.getElementById('contactEmail').value = '';
+  document.getElementById('contactPhone').value = '';
+}
+
+// Retrieve all contacts and render them in a table
+function loadContacts() {
+  fetch(`${API_BASE_URL}/api/crm`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(list => {
+      const table = document.getElementById('contactTable');
+      table.innerHTML = '';
+      const header = document.createElement('tr');
+      header.innerHTML = '<th>Name</th><th>Email</th><th>Phone</th><th></th>';
+      table.appendChild(header);
+      list.forEach(c => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${c.name}</td>
+          <td>${c.email}</td>
+          <td>${c.phone}</td>
+          <td>
+            <button onclick="editContact('${c._id}')">Edit</button>
+            <button onclick="deleteContact('${c._id}')">Delete</button>
+          </td>`;
+        table.appendChild(row);
+      });
+    });
+}
+
+// Populate the form with an existing contact
+function editContact(id) {
+  fetch(`${API_BASE_URL}/api/crm/${id}`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(c => {
+      document.getElementById('contactId').value = c._id;
+      document.getElementById('contactName').value = c.name;
+      document.getElementById('contactEmail').value = c.email;
+      document.getElementById('contactPhone').value = c.phone;
+    });
+}
+
+// Persist a new or existing contact
+function saveContact(e) {
+  e.preventDefault();
+  const id = document.getElementById('contactId').value;
+  const name = document.getElementById('contactName').value;
+  const email = document.getElementById('contactEmail').value;
+  const phone = document.getElementById('contactPhone').value;
+  fetch(`${API_BASE_URL}/api/crm`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ id, name, email, phone })
+  }).then(() => {
+    resetContactForm();
+    loadContacts();
+  });
+}
+
+// Remove a contact and refresh the table
+function deleteContact(id) {
+  fetch(`${API_BASE_URL}/api/crm/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  }).then(() => loadContacts());
 }
 
 /**
