@@ -4,6 +4,7 @@ import { Role } from '../models/user';
 
 export interface AuthRequest extends Request {
   user?: { id: string; username: string; role: Role; team?: string };
+  file?: Express.Multer.File; // populated by multer when handling uploads
 }
 
 const JWT_SECRET = process.env.JWT_SECRET || 'secret';
