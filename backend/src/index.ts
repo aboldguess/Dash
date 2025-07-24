@@ -4,6 +4,8 @@ import cors from 'cors';
 import path from 'path';
 import http from 'http';
 import { Server } from 'socket.io';
+import net from 'net';
+import open from 'open';
 
 import authRoutes from './routes/auth';
 import messageRoutes from './routes/messages';
@@ -23,7 +25,36 @@ import { seedUsers } from './seedUsers';
 import { userConnected, userDisconnected } from './presence';
 
 export const app = express();
-const PORT = process.env.PORT || 3000;
+// The initial port preference comes from the environment or defaults to 3000
+const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+
+/**
+ * Check if the provided port is currently in use.
+ */
+function isPortInUse(port: number): Promise<boolean> {
+  return new Promise(resolve => {
+    const tester = net
+      .createServer()
+      .once('error', err => {
+        resolve((err as NodeJS.ErrnoException).code === 'EADDRINUSE');
+      })
+      .once('listening', () => {
+        tester.close(() => resolve(false));
+      })
+      .listen(port);
+  });
+}
+
+/**
+ * Find the first available port starting from the provided number.
+ */
+async function findAvailablePort(startPort: number): Promise<number> {
+  let port = startPort;
+  while (await isPortInUse(port)) {
+    port += 1;
+  }
+  return port;
+}
 
 // Create the HTTP server separately so Socket.IO can share it
 const server = http.createServer(app);
@@ -143,9 +174,14 @@ if (require.main === module) {
       // Populate demo accounts before accepting connections
       await seedUsers();
 
+      // Determine the first free port starting from our default
+      const port = await findAvailablePort(DEFAULT_PORT);
+
       // Start the combined HTTP/WebSocket server once the DB is ready
-      server.listen(PORT, () => {
-        console.log(`Server listening on port ${PORT}`);
+      server.listen(port, async () => {
+        console.log(`Server listening on port ${port}`);
+        // Open the frontend in the user's default browser
+        await open(`http://localhost:${port}`);
       });
     })
     .catch(err => {
