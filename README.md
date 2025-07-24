@@ -3,7 +3,7 @@
 Dash is an example enterprise web platform demonstrating several features:
 
 - Instant messaging with multiple channels, presence indicators and message editing
-- Basic CRM with contact management and project/program tracking
+- Basic CRM with contact management, company/notes fields and project/program tracking
 - Timesheets and leave requests
 - Team management with seat limits and email invitations
 - Simple sign-up flow that creates teams with dummy payment processing

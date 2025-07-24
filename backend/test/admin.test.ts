@@ -3,6 +3,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+// Increase test timeout because in-memory MongoDB startup can be slow
+jest.setTimeout(20000);
 import { app } from '../src/index';
 import { connectDB } from '../src/db';
 import { User } from '../src/models/user';

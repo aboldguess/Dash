@@ -13,6 +13,13 @@ router.get('/', async (_, res) => {
   res.json(list);
 });
 
+// Find contacts belonging to a given company. Placed before the generic id
+// handler so the path does not get mistaken for a contact identifier.
+router.get('/company/:company', async (req, res) => {
+  const list = await Contact.find({ company: req.params.company }).exec();
+  res.json(list);
+});
+
 // Retrieve a single contact by identifier
 router.get('/:id', async (req, res) => {
   const contact = await Contact.findById(req.params.id).exec();
