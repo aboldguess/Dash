@@ -112,7 +112,9 @@ router.post('/signup', async (req, res) => {
     password: hashed,
     role: 'user',
     team: team._id,
-    allowedContacts: []
+    allowedContacts: [],
+    following: [],
+    followers: []
   });
   await newUser.save();
 

@@ -27,6 +27,7 @@
         <li id="tool-projects" onclick="selectTool('projects')">Projects</li>
         <li id="tool-timesheets" onclick="selectTool('timesheets')">TS</li>
         <li id="tool-recruit" onclick="selectTool('recruit')">HR</li>
+        <li id="tool-social" onclick="selectTool('social')">Social</li>
       </ul>
     </nav>
 
@@ -84,6 +85,14 @@
       <section id="recruit" class="hidden">
         <h2>Recruitment</h2>
         <p>Recruitment functionality coming soon.</p>
+      </section>
+      <section id="social" class="hidden">
+        <h2>Social</h2>
+        <form id="postForm" onsubmit="savePost(event)">
+          <textarea id="postText" placeholder="Share an update" required></textarea>
+          <button type="submit">Post</button>
+        </form>
+        <ul id="postList"></ul>
       </section>
     </main>
   </div>

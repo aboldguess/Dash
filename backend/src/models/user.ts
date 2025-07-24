@@ -13,6 +13,10 @@ export interface IUser extends Document {
   team?: Types.ObjectId;
   /** Users from other teams allowed to message this user */
   allowedContacts: Types.ObjectId[];
+  /** Users this account is following */
+  following: Types.ObjectId[];
+  /** Users that follow this account */
+  followers: Types.ObjectId[];
 }
 
 const UserSchema = new Schema<IUser>({
@@ -21,7 +25,10 @@ const UserSchema = new Schema<IUser>({
   role: { type: String, enum: ['user', 'teamAdmin', 'admin'], default: 'user' },
   team: { type: Schema.Types.ObjectId, ref: 'Team' },
   // Cross-team contacts who may exchange direct messages
-  allowedContacts: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+  allowedContacts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  // Social relationships
+  following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  followers: [{ type: Schema.Types.ObjectId, ref: 'User' }]
 });
 
 export const User = model<IUser>('User', UserSchema);
