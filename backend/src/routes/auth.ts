@@ -4,6 +4,7 @@ import jwt from 'jsonwebtoken';
 import { User } from '../models/user';
 import { Team } from '../models/team';
 import { TeamInvitation } from '../models/teamInvitation';
+import { processPayment } from '../payments';
 
 // Secret key used to sign JWT tokens. In production this should come from
 // an environment variable so each deployment can use a unique key.
@@ -46,7 +47,10 @@ router.post('/login', async (req, res) => {
 // include a team ID or invitation token to join an existing team. If a
 // `teamName` is supplied, a new team will be created on the fly.
 router.post('/signup', async (req, res) => {
-  const { username, password, teamId, token, teamName } = req.body;
+  // In addition to standard credentials the client may request creation of a
+  // new team. `seats` specifies how many licenses to purchase and `plan`
+  // represents the pricing tier (unused by the dummy payment handler).
+  const { username, password, teamId, token, teamName, seats = 5, plan = 'basic' } = req.body;
 
   // Fail if the username already exists
   if (await User.exists({ username })) {
@@ -55,6 +59,9 @@ router.post('/signup', async (req, res) => {
 
   // Hash the password before storing in the database
   const hashed = await bcrypt.hash(password, 10);
+  // Convert the requested seat count to a number, falling back to 5 which
+  // matches the default free tier used in demos.
+  const seatCount = parseInt(seats, 10) || 5;
 
   let team;
   // Use invitation token if provided
@@ -73,10 +80,14 @@ router.post('/signup', async (req, res) => {
     // Directly specify a team by id
     team = await Team.findById(teamId).exec();
   } else if (teamName) {
-    // No team was provided so create one using the supplied name
-    // Domains and seat count could also be collected here but are
-    // omitted for simplicity.
-    team = new Team({ name: teamName, domains: [], seats: 5 });
+    // Creating a brand new team requires payment processing. This dummy
+    // implementation simply waits then logs the transaction. Replace
+    // `processPayment` with a real gateway later.
+    await processPayment(username, plan, seatCount);
+
+    // Create the team with the requested number of seats. Domain mapping
+    // can be added during onboarding but is omitted here for brevity.
+    team = new Team({ name: teamName, domains: [], seats: seatCount });
     await team.save();
   } else {
     // Fallback to domain based matching
@@ -90,7 +101,7 @@ router.post('/signup', async (req, res) => {
     return res.status(400).json({ message: 'Unable to determine team for user' });
   }
 
-  // Enforce license seat limits
+  // Enforce license seat limits to prevent exceeding paid capacity
   const memberCount = await User.countDocuments({ team: team._id });
   if (memberCount >= team.seats) {
     return res.status(400).json({ message: 'No available seats for this team' });

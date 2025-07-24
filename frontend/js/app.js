@@ -110,15 +110,17 @@ function signup() {
   const username = document.getElementById('signupUsername').value;
   const password = document.getElementById('signupPassword').value;
   const teamName = document.getElementById('signupTeamName').value;
+  // Number of seats/licenses for the new team. Defaults to 1 if not provided.
+  const seats = parseInt(document.getElementById('signupSeats').value, 10) || 1;
   const token = document.getElementById('signupToken').value;
 
-  // Send the collected details to the signup endpoint. Team name will trigger
-  // creation of a new team while an invite token lets the user join an existing
-  // one.
+  // Send the collected details to the signup endpoint. When a team name is
+  // supplied the backend will create the team and process a dummy payment
+  // before completing registration.
   fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password, teamName, token })
+    body: JSON.stringify({ username, password, teamName, token, seats })
   })
     .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed')))
     .then(u => {

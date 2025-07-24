@@ -6,6 +6,7 @@ Dash is an example enterprise web platform demonstrating several features:
 - Basic CRM and project/program management
 - Timesheets and leave requests
 - Team management with seat limits and email invitations
+- Simple sign-up flow that creates teams with dummy payment processing
 - Role-based authentication with admin, team admin and user levels
 - Browser-based UI designed to be responsive and mobile friendly
 - Dockerised backend for easy deployment
@@ -59,6 +60,11 @@ export DB_URI="mongodb://localhost:27017/dash"
 
 Running `npm run db:init` will attempt to connect using this value. If the
 connection succeeds, the server can be started normally with `npm start`.
+
+The sign-up page will create a new team when a name is provided. Payment is
+currently simulated server-side so the flow can be tested without real billing
+details. Replace `processPayment` in `backend/src/payments.ts` with an actual
+gateway integration when ready.
 
 ## Setup
 
