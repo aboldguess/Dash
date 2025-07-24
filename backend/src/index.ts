@@ -18,6 +18,7 @@ import leaveRoutes from './routes/leaves';
 import userRoutes from './routes/users';
 import teamRoutes from './routes/teams';
 import adminRoutes from './routes/admin';
+import profileRoutes from './routes/profile';
 import { connectDB } from './db';
 import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
@@ -149,6 +150,11 @@ app.use('/api/leaves', leaveRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/teams', teamRoutes);
 app.use('/api/admin', adminRoutes);
+app.use('/api/profile', profileRoutes);
+
+// Expose uploaded profile photos as static files
+const uploadsDir = path.resolve(__dirname, '..', '..', 'uploads');
+app.use('/uploads', express.static(uploadsDir));
 
 // Serve static frontend files. The path is resolved relative to the compiled
 // JavaScript location so it works when running from the 'dist' directory.

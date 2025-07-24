@@ -1,0 +1,36 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Profile - Dash</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body onload="loadProfile()">
+  <header>
+    <nav>
+      <strong>Dash</strong>
+      <a href="dashboard.html">Dashboard</a>
+      <a href="#" onclick="logout()">Logout</a>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>My Profile</h1>
+    <img id="profileImage" class="avatar" alt="profile photo" />
+    <form id="profileForm" onsubmit="saveProfile(event)">
+      <input id="profileCareer" placeholder="Career history" />
+      <input id="profileEducation" placeholder="Education" />
+      <textarea id="profileStatement" placeholder="Personal statement"></textarea>
+      <button type="submit">Save</button>
+    </form>
+    <form id="photoForm" onsubmit="return false;">
+      <input id="profilePhoto" type="file" accept="image/*" />
+      <button type="button" onclick="uploadPhoto()">Upload Photo</button>
+    </form>
+  </section>
+
+  <script src="js/app.js"></script>
+  <script src="js/profile.js"></script>
+</body>
+</html>
