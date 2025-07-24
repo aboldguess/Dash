@@ -1,20 +1,43 @@
-/* Global layout styles */
+/*--------------------------------------------------------------
+  Global palette and base typography
+  Using CSS custom properties makes it easy to apply a consistent
+  look across all pages while allowing individual sections to use
+  different accents from the same palette.
+--------------------------------------------------------------*/
+:root {
+  --color-primary: #1e3a8a;   /* brand blue */
+  --color-secondary: #0e7490; /* teal accent */
+  --color-accent: #f59e0b;    /* orange highlight */
+  --color-light: #ffffff;
+  --color-background: #f7fafc;
+  --color-text: #374151;
+  --color-muted: #94a3b8;
+}
+
 body {
   margin: 0;
-  font-family: sans-serif;
+  color: var(--color-text);
+  background: var(--color-background);
+  font-family: "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  line-height: 1.5;
 }
 
 /* Simple brand header used across pages */
 header {
-  background: #004080;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-light);
   padding: 1rem;
 }
 
 header nav a {
-  color: #fff;
+  color: var(--color-light);
   margin-right: 1rem;
   text-decoration: none;
+  font-weight: 600;
+}
+
+header nav a:hover {
+  text-decoration: underline;
 }
 
 /* Landing page hero section */
@@ -25,6 +48,8 @@ header nav a {
   justify-content: center;
   height: calc(100vh - 70px);
   text-align: center;
+  color: var(--color-light);
+  background: linear-gradient(135deg, var(--color-primary), var(--color-secondary));
 }
 
 .hero h1 {
@@ -40,8 +65,8 @@ header nav a {
 /* Narrow tool selector on the far left */
 .tool-sidebar {
   width: 60px;
-  background: #333;
-  color: #fff;
+  background: var(--color-primary);
+  color: var(--color-light);
   padding-top: 1rem;
   box-sizing: border-box;
 }
@@ -60,7 +85,7 @@ header nav a {
 }
 
 .tool-sidebar li.active {
-  background: #555;
+  background: var(--color-secondary);
 }
 
 #gantt {
@@ -70,10 +95,10 @@ header nav a {
 /* Contextual sidebar shown for the selected tool */
 .context-sidebar {
   width: 200px;
-  background: #f4f4f4;
+  background: var(--color-light);
   padding: 1rem;
   box-sizing: border-box;
-  border-right: 1px solid #ddd;
+  border-right: 1px solid var(--color-muted);
 }
 
 .context-sidebar ul {
@@ -117,17 +142,30 @@ header nav a {
   }
 }
 
-/* Form elements */
+/* Base styles for form elements */
 input {
   margin: 0.5rem 0;
   padding: 0.5rem;
   width: 100%;
   box-sizing: border-box;
+  border: 1px solid var(--color-muted);
+  border-radius: 4px;
 }
 
+/* Primary action button */
 button {
   padding: 0.5rem 1rem;
   margin-top: 0.5rem;
+  border: none;
+  border-radius: 4px;
+  background: var(--color-accent);
+  color: var(--color-light);
+  cursor: pointer;
+  font-weight: 600;
+}
+
+button:hover {
+  background: var(--color-secondary);
 }
 
 /* Styles for direct messages */
@@ -157,7 +195,7 @@ button {
 }
 
 .message .time {
-  color: #777;
+  color: var(--color-muted);
   margin-left: 0.5rem; /* space after the message text */
   font-size: 0.8rem;
 }
@@ -174,11 +212,11 @@ button {
   height: 8px;
   border-radius: 50%;
   margin-right: 4px;
-  background: #ccc;
+  background: var(--color-muted);
 }
 
 .user-online .online-indicator {
-  background: #0a0;
+  background: #16a34a; /* green for online presence */
 }
 
 /* Layout for the admin dashboard */
@@ -189,10 +227,10 @@ button {
 /* Simple sidebar menu used to switch between admin sections */
 .admin-menu {
   width: 150px;
-  background: #eee;
+  background: var(--color-light);
   padding: 1rem;
   box-sizing: border-box;
-  border-right: 1px solid #ccc;
+  border-right: 1px solid var(--color-muted);
 }
 
 .admin-menu button {
@@ -210,7 +248,7 @@ button {
 
 .admin-table th,
 .admin-table td {
-  border: 1px solid #ccc;
+  border: 1px solid var(--color-muted);
   padding: 0.5rem;
   text-align: left;
 }
