@@ -109,11 +109,16 @@ function login() {
 function signup() {
   const username = document.getElementById('signupUsername').value;
   const password = document.getElementById('signupPassword').value;
+  const teamName = document.getElementById('signupTeamName').value;
+  const token = document.getElementById('signupToken').value;
 
+  // Send the collected details to the signup endpoint. Team name will trigger
+  // creation of a new team while an invite token lets the user join an existing
+  // one.
   fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ username, password })
+    body: JSON.stringify({ username, password, teamName, token })
   })
     .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed')))
     .then(u => {

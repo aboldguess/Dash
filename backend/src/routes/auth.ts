@@ -42,9 +42,11 @@ router.post('/login', async (req, res) => {
   });
 });
 
-// Sign up endpoint to create a user document
+// Sign up endpoint to create a user document. The request may optionally
+// include a team ID or invitation token to join an existing team. If a
+// `teamName` is supplied, a new team will be created on the fly.
 router.post('/signup', async (req, res) => {
-  const { username, password, teamId, token } = req.body;
+  const { username, password, teamId, token, teamName } = req.body;
 
   // Fail if the username already exists
   if (await User.exists({ username })) {
@@ -70,6 +72,12 @@ router.post('/signup', async (req, res) => {
   } else if (teamId) {
     // Directly specify a team by id
     team = await Team.findById(teamId).exec();
+  } else if (teamName) {
+    // No team was provided so create one using the supplied name
+    // Domains and seat count could also be collected here but are
+    // omitted for simplicity.
+    team = new Team({ name: teamName, domains: [], seats: 5 });
+    await team.save();
   } else {
     // Fallback to domain based matching
     const parts = username.split('@');
