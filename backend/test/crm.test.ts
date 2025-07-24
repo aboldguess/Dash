@@ -3,6 +3,8 @@ import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
+// Increase test timeout because database downloads can take time
+jest.setTimeout(20000);
 import { app } from '../src/index';
 import { connectDB } from '../src/db';
 import { Team } from '../src/models/team';
@@ -39,7 +41,13 @@ test('crm contact lifecycle', async () => {
   const create = await request(app)
     .post('/api/crm')
     .set('Authorization', `Bearer ${adminToken}`)
-    .send({ name: 'Acme', email: 'contact@example.com', phone: '123' });
+    .send({
+      name: 'Acme',
+      email: 'contact@example.com',
+      phone: '123',
+      company: 'Widgets Inc',
+      notes: 'Important client'
+    });
   expect(create.status).toBe(201);
   const id = create.body._id;
 
@@ -48,15 +56,27 @@ test('crm contact lifecycle', async () => {
     .set('Authorization', `Bearer ${adminToken}`);
   expect(list.body.find((c: any) => c._id === id)).toBeTruthy();
 
+  const byCompany = await request(app)
+    .get('/api/crm/company/Widgets Inc')
+    .set('Authorization', `Bearer ${adminToken}`);
+  expect(byCompany.body.length).toBe(1);
+
   const single = await request(app)
     .get(`/api/crm/${id}`)
     .set('Authorization', `Bearer ${adminToken}`);
-  expect(single.body.email).toBe('contact@example.com');
+  expect(single.body.company).toBe('Widgets Inc');
 
   const update = await request(app)
     .post('/api/crm')
     .set('Authorization', `Bearer ${adminToken}`)
-    .send({ id, name: 'Acme Updated', email: 'contact@example.com', phone: '456' });
+    .send({
+      id,
+      name: 'Acme Updated',
+      email: 'contact@example.com',
+      phone: '456',
+      company: 'Widgets Inc',
+      notes: 'Key decision maker'
+    });
   expect(update.body.name).toBe('Acme Updated');
 
   const del = await request(app)

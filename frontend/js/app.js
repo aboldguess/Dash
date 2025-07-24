@@ -449,6 +449,8 @@ function resetContactForm() {
   document.getElementById('contactName').value = '';
   document.getElementById('contactEmail').value = '';
   document.getElementById('contactPhone').value = '';
+  document.getElementById('contactCompany').value = '';
+  document.getElementById('contactNotes').value = '';
 }
 
 // Retrieve all contacts and render them in a table
@@ -461,7 +463,8 @@ function loadContacts() {
       const table = document.getElementById('contactTable');
       table.innerHTML = '';
       const header = document.createElement('tr');
-      header.innerHTML = '<th>Name</th><th>Email</th><th>Phone</th><th></th>';
+      header.innerHTML =
+        '<th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Notes</th><th></th>';
       table.appendChild(header);
       list.forEach(c => {
         const row = document.createElement('tr');
@@ -469,6 +472,8 @@ function loadContacts() {
           <td>${c.name}</td>
           <td>${c.email}</td>
           <td>${c.phone}</td>
+          <td>${c.company || ''}</td>
+          <td>${c.notes || ''}</td>
           <td>
             <button onclick="editContact('${c._id}')">Edit</button>
             <button onclick="deleteContact('${c._id}')">Delete</button>
@@ -489,6 +494,8 @@ function editContact(id) {
       document.getElementById('contactName').value = c.name;
       document.getElementById('contactEmail').value = c.email;
       document.getElementById('contactPhone').value = c.phone;
+      document.getElementById('contactCompany').value = c.company || '';
+      document.getElementById('contactNotes').value = c.notes || '';
     });
 }
 
@@ -499,13 +506,15 @@ function saveContact(e) {
   const name = document.getElementById('contactName').value;
   const email = document.getElementById('contactEmail').value;
   const phone = document.getElementById('contactPhone').value;
+  const company = document.getElementById('contactCompany').value;
+  const notes = document.getElementById('contactNotes').value;
   fetch(`${API_BASE_URL}/api/crm`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${currentUser.token}`
     },
-    body: JSON.stringify({ id, name, email, phone })
+    body: JSON.stringify({ id, name, email, phone, company, notes })
   }).then(() => {
     resetContactForm();
     loadContacts();
