@@ -21,7 +21,7 @@ import { DirectMessage } from './models/directMessage';
 import { seedUsers } from './seedUsers';
 import { userConnected, userDisconnected } from './presence';
 
-const app = express();
+export const app = express();
 const PORT = process.env.PORT || 3000;
 
 // Create the HTTP server separately so Socket.IO can share it
@@ -135,17 +135,19 @@ app.use((_, res) => {
 });
 
 // Connect to MongoDB then start the HTTP server
-connectDB()
-  .then(async () => {
-    // Populate demo accounts before accepting connections
-    await seedUsers();
+if (require.main === module) {
+  connectDB()
+    .then(async () => {
+      // Populate demo accounts before accepting connections
+      await seedUsers();
 
-    // Start the combined HTTP/WebSocket server once the DB is ready
-    server.listen(PORT, () => {
-      console.log(`Server listening on port ${PORT}`);
+      // Start the combined HTTP/WebSocket server once the DB is ready
+      server.listen(PORT, () => {
+        console.log(`Server listening on port ${PORT}`);
+      });
+    })
+    .catch(err => {
+      console.error('Failed to connect to database', err);
+      process.exit(1);
     });
-  })
-  .catch(err => {
-    console.error('Failed to connect to database', err);
-    process.exit(1);
-  });
+}
