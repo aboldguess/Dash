@@ -58,3 +58,26 @@ export DB_URI="mongodb://localhost:27017/dash"
 
 Running `npm run db:init` will attempt to connect using this value. If the
 connection succeeds, the server can be started normally with `npm start`.
+
+## Setup
+
+1. Copy `backend/.env.example` to `backend/.env` and edit the `DB_URI` to point
+   to your MongoDB instance. Optionally set `JWT_SECRET` for token signing.
+2. Install dependencies and build the backend:
+
+   ```bash
+   cd backend
+   npm install
+   npm run build
+   npm start
+   ```
+
+## Admin Configuration
+
+Administrators can manage runtime settings via the new `/api/admin/config`
+endpoints:
+
+- `POST /api/admin/config` &ndash; create or update a configuration value
+- `GET /api/admin/config` &ndash; list all stored configuration values
+
+These endpoints require an authenticated user with the `admin` role.
