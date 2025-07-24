@@ -41,7 +41,9 @@ export async function seedUsers(): Promise<void> {
       password: hashed,
       role: 'admin',
       team: adminTeam._id,
-      allowedContacts: []
+      allowedContacts: [],
+      following: [],
+      followers: []
     });
     await adminUser.save();
   }
@@ -57,7 +59,9 @@ export async function seedUsers(): Promise<void> {
         password: hashed,
         role: 'user',
         team: team._id,
-        allowedContacts: []
+        allowedContacts: [],
+        following: [],
+        followers: []
       });
       await user.save();
     }

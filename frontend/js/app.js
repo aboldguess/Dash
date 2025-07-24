@@ -73,6 +73,10 @@ function selectTool(tool) {
     resetProjectForm();
   }
 
+  if (tool === 'social') {
+    loadPosts();
+  }
+
   // Display the relevant section in the main area
   document.querySelectorAll('.content > section').forEach(sec => sec.classList.add('hidden'));
   const activeSection = document.getElementById(tool);
@@ -648,6 +652,42 @@ function renderGantt(tasks) {
   } else {
     new Gantt(area, tasks);
   }
+}
+
+// ----------------------- Social helpers -----------------------
+
+// Retrieve all posts for the social feed
+function loadPosts() {
+  fetch(`${API_BASE_URL}/api/social/posts`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(list => {
+      const posts = document.getElementById('postList');
+      posts.innerHTML = '';
+      list.forEach(p => {
+        const li = document.createElement('li');
+        li.textContent = `${p.author.username}: ${p.text}`;
+        posts.appendChild(li);
+      });
+    });
+}
+
+// Submit a new social post
+function savePost(e) {
+  e.preventDefault();
+  const text = document.getElementById('postText').value;
+  fetch(`${API_BASE_URL}/api/social/posts`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ text })
+  }).then(() => {
+    document.getElementById('postText').value = '';
+    loadPosts();
+  });
 }
 
 /**
