@@ -253,3 +253,10 @@ button:hover {
   text-align: left;
 }
 
+/* Reusable status message styling for subtle form feedback */
+.status {
+  margin-left: 0.5rem;
+  font-size: 0.9rem;
+  color: var(--color-muted);
+}
+
