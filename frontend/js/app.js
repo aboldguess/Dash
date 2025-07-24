@@ -1,8 +1,10 @@
-// Base URL for API requests. The backend runs on localhost:3000 when
-// developing locally, so all API calls target that server regardless of
-// which port the frontend is served from. Update this value if your
-// backend listens on a different host or port.
-const API_BASE_URL = 'http://localhost:3000';
+// Base URL for API requests. By default the frontend assumes the backend
+// is reachable from the same host/port it was served from. Using
+// `window.location.origin` ensures requests are made to whichever server
+// delivered the page, allowing the UI to work when accessed remotely.
+// If your backend runs on a different host or port, replace this value
+// with the appropriate URL (e.g. 'http://192.168.1.5:3000').
+const API_BASE_URL = window.location.origin;
 
 // Promise used to ensure the Socket.IO client library is loaded before
 // attempting to create a connection. If the script tag included in the

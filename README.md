@@ -28,11 +28,12 @@ Dash is an example enterprise web platform demonstrating several features:
    npm run build
    npm start
    ```
-   Browse to `http://localhost:3000` and the web interface should load
-   without a separate static file server.
-   The JavaScript code assumes the API is available on `http://localhost:3000`.
-   If your backend runs elsewhere, update `API_BASE_URL` in
-   `frontend/js/app.js` accordingly so requests reach the correct server.
+  Browse to `http://localhost:3000` and the web interface should load
+  without a separate static file server.
+  The frontend now uses `window.location.origin` for API requests so it
+  automatically points to the host that served the page. If your backend
+  runs on a different host or port, update `API_BASE_URL` in
+  `frontend/js/app.js` accordingly.
 
 ### Docker
 
