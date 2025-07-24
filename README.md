@@ -88,7 +88,8 @@ The repository seeds a default administrator account for demo purposes:
 - **Username:** `admin`
 - **Password:** `Admin12345`
 
-After logging in with this account, an admin panel is available at
-`/admin.html` where configuration values can be managed through a basic GUI
-and a list of backend endpoints provides placeholders for additional
-functionality.
+After logging in with this account, an admin dashboard is available at
+`/admin.html`. The dashboard lets admins manage configuration values, create
+and edit teams including seat counts and view all registered users. It remains
+a lightweight interface but now exposes enough controls to administer the
+demo data without resorting to API calls.

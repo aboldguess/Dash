@@ -177,3 +177,37 @@ button {
   background: #0a0;
 }
 
+/* Layout for the admin dashboard */
+.admin-layout {
+  display: flex;
+}
+
+/* Simple sidebar menu used to switch between admin sections */
+.admin-menu {
+  width: 150px;
+  background: #eee;
+  padding: 1rem;
+  box-sizing: border-box;
+  border-right: 1px solid #ccc;
+}
+
+.admin-menu button {
+  display: block;
+  width: 100%;
+  margin-bottom: 0.5rem;
+}
+
+/* Table styling for lists in the admin panel */
+.admin-table {
+  width: 100%;
+  border-collapse: collapse;
+  margin-top: 0.5rem;
+}
+
+.admin-table th,
+.admin-table td {
+  border: 1px solid #ccc;
+  padding: 0.5rem;
+  text-align: left;
+}
+
