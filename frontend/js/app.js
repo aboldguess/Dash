@@ -476,20 +476,26 @@ function loadContacts() {
         '<th>Name</th><th>Email</th><th>Phone</th><th>Company</th><th>Notes</th><th></th>';
       table.appendChild(header);
       list.forEach(c => {
-        const row = document.createElement('tr');
-        row.innerHTML = `
-          <td>${c.name}</td>
-          <td>${c.email}</td>
-          <td>${c.phone}</td>
-          <td>${c.company || ''}</td>
-          <td>${c.notes || ''}</td>
-          <td>
-            <button onclick="editContact('${c._id}')">Edit</button>
-            <button onclick="deleteContact('${c._id}')">Delete</button>
-          </td>`;
-        table.appendChild(row);
+        addContactRow(c);
       });
     });
+}
+
+// Create and append a table row for a single contact
+function addContactRow(c) {
+  const table = document.getElementById('contactTable');
+  const row = document.createElement('tr');
+  row.innerHTML = `
+    <td>${c.name}</td>
+    <td>${c.email}</td>
+    <td>${c.phone}</td>
+    <td>${c.company || ''}</td>
+    <td>${c.notes || ''}</td>
+    <td>
+      <button onclick="editContact('${c._id}')">Edit</button>
+      <button onclick="deleteContact('${c._id}')">Delete</button>
+    </td>`;
+  table.appendChild(row);
 }
 
 // Populate the form with an existing contact
@@ -511,6 +517,9 @@ function editContact(id) {
 // Persist a new or existing contact
 function saveContact(e) {
   e.preventDefault();
+  // Display a subtle status message while processing the request
+  const status = document.getElementById('contactStatus');
+  status.textContent = 'Saving...';
   const id = document.getElementById('contactId').value;
   const name = document.getElementById('contactName').value;
   const email = document.getElementById('contactEmail').value;
@@ -524,10 +533,28 @@ function saveContact(e) {
       Authorization: `Bearer ${currentUser.token}`
     },
     body: JSON.stringify({ id, name, email, phone, company, notes })
-  }).then(() => {
-    resetContactForm();
-    loadContacts();
-  });
+  })
+    .then(r =>
+      r.ok
+        ? r.json()
+        : r.json().then(d => Promise.reject(d.message || 'Failed to save'))
+    )
+    .then(contact => {
+      resetContactForm();
+      // If a new contact was created, append the row immediately for feedback
+      if (!id) {
+        addContactRow(contact);
+      } else {
+        loadContacts();
+      }
+      status.textContent = 'Saved';
+      setTimeout(() => {
+        status.textContent = '';
+      }, 2000);
+    })
+    .catch(err => {
+      status.textContent = err;
+    });
 }
 
 // Remove a contact and refresh the table
