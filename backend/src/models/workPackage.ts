@@ -11,7 +11,7 @@ export interface IWorkPackage extends Document {
   end: Date;
   hours: number;
   cost: number;
-  tasks: Types.Array<ITask>;
+  tasks: Types.DocumentArray<ITask>;
 }
 
 const WorkPackageSchema = new Schema<IWorkPackage>({

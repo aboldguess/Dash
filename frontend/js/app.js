@@ -577,6 +577,9 @@ function resetProjectForm() {
   document.getElementById('projectHours').value = '';
   document.getElementById('projectCost').value = '';
   document.getElementById('projectDesc').value = '';
+  document.getElementById('workPackageSection').classList.add('hidden');
+  resetWorkPackageForm();
+  resetTaskForm();
 }
 
 // Retrieve all projects and render them along with a simple Gantt chart
@@ -634,6 +637,7 @@ function editProject(id) {
       document.getElementById('projectHours').value = p.hours || '';
       document.getElementById('projectCost').value = p.cost || '';
       document.getElementById('projectDesc').value = p.description || '';
+      loadWorkPackages(p._id);
     });
 }
 
@@ -657,6 +661,167 @@ function saveProject(e) {
     body: JSON.stringify({ id, name, owner, start, end, hours, cost, description })
   }).then(() => {
     resetProjectForm();
+    loadProjects();
+  });
+}
+
+// ----------------------- Work package helpers -----------------------
+
+function resetWorkPackageForm() {
+  document.getElementById('wpId').value = '';
+  document.getElementById('wpName').value = '';
+  document.getElementById('wpOwner').value = '';
+  document.getElementById('wpStart').value = '';
+  document.getElementById('wpEnd').value = '';
+  document.getElementById('wpHours').value = '';
+  document.getElementById('wpCost').value = '';
+}
+
+function resetTaskForm() {
+  document.getElementById('taskId').value = '';
+  document.getElementById('taskName').value = '';
+  document.getElementById('taskOwner').value = '';
+  document.getElementById('taskStart').value = '';
+  document.getElementById('taskEnd').value = '';
+  document.getElementById('taskHours').value = '';
+  document.getElementById('taskCost').value = '';
+}
+
+function loadWorkPackages(projectId) {
+  document.getElementById('workPackageSection').classList.remove('hidden');
+  document.getElementById('wpProject').value = projectId;
+  document.getElementById('taskProject').value = projectId;
+  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(list => {
+      const table = document.getElementById('workPackageTable');
+      table.innerHTML = '';
+      const header = document.createElement('tr');
+      header.innerHTML = '<th>Name</th><th>Owner</th><th></th>';
+      table.appendChild(header);
+      list.forEach(wp => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${wp.name}</td><td>${wp.owner || ''}</td><td><button onclick="editWorkPackage('${projectId}','${wp._id}')">Edit</button></td>`;
+        table.appendChild(row);
+      });
+    });
+}
+
+function editWorkPackage(projectId, wpId) {
+  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(wp => {
+      document.getElementById('wpProject').value = projectId;
+      document.getElementById('wpId').value = wp._id;
+      document.getElementById('wpName').value = wp.name;
+      document.getElementById('wpOwner').value = wp.owner || '';
+      document.getElementById('wpStart').value = wp.start ? wp.start.substr(0,10) : '';
+      document.getElementById('wpEnd').value = wp.end ? wp.end.substr(0,10) : '';
+      document.getElementById('wpHours').value = wp.hours || '';
+      document.getElementById('wpCost').value = wp.cost || '';
+      document.getElementById('taskWp').value = wp._id;
+      loadTasks(projectId, wp._id);
+    });
+}
+
+function saveWorkPackage(e) {
+  e.preventDefault();
+  const projectId = document.getElementById('wpProject').value;
+  const id = document.getElementById('wpId').value;
+  const data = {
+    name: document.getElementById('wpName').value,
+    owner: document.getElementById('wpOwner').value,
+    start: document.getElementById('wpStart').value,
+    end: document.getElementById('wpEnd').value,
+    hours: document.getElementById('wpHours').value,
+    cost: document.getElementById('wpCost').value
+  };
+  const url = id
+    ? `${API_BASE_URL}/api/projects/${projectId}/workpackages/${id}`
+    : `${API_BASE_URL}/api/projects/${projectId}/workpackages`;
+  const method = id ? 'PATCH' : 'POST';
+  fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify(data)
+  }).then(() => {
+    resetWorkPackageForm();
+    loadWorkPackages(projectId);
+  });
+}
+
+function loadTasks(projectId, wpId) {
+  document.getElementById('taskWp').value = wpId;
+  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(wp => {
+      const table = document.getElementById('taskTable');
+      table.innerHTML = '';
+      const header = document.createElement('tr');
+      header.innerHTML = '<th>Name</th><th>Owner</th><th></th>';
+      table.appendChild(header);
+      wp.tasks.forEach(t => {
+        const row = document.createElement('tr');
+        row.innerHTML = `<td>${t.name}</td><td>${t.owner || ''}</td><td><button onclick="editTask('${projectId}','${wpId}','${t._id}')">Edit</button></td>`;
+        table.appendChild(row);
+      });
+    });
+}
+
+function editTask(projectId, wpId, taskId) {
+  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${taskId}`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(t => {
+      document.getElementById('taskProject').value = projectId;
+      document.getElementById('taskWp').value = wpId;
+      document.getElementById('taskId').value = t._id;
+      document.getElementById('taskName').value = t.name;
+      document.getElementById('taskOwner').value = t.owner || '';
+      document.getElementById('taskStart').value = t.start ? t.start.substr(0,10) : '';
+      document.getElementById('taskEnd').value = t.end ? t.end.substr(0,10) : '';
+      document.getElementById('taskHours').value = t.hours || '';
+      document.getElementById('taskCost').value = t.cost || '';
+    });
+}
+
+function saveTask(e) {
+  e.preventDefault();
+  const projectId = document.getElementById('taskProject').value;
+  const wpId = document.getElementById('taskWp').value;
+  const id = document.getElementById('taskId').value;
+  const data = {
+    name: document.getElementById('taskName').value,
+    owner: document.getElementById('taskOwner').value,
+    start: document.getElementById('taskStart').value,
+    end: document.getElementById('taskEnd').value,
+    hours: document.getElementById('taskHours').value,
+    cost: document.getElementById('taskCost').value
+  };
+  const url = id
+    ? `${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${id}`
+    : `${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks`;
+  const method = id ? 'PATCH' : 'POST';
+  fetch(url, {
+    method,
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify(data)
+  }).then(() => {
+    resetTaskForm();
+    loadTasks(projectId, wpId);
     loadProjects();
   });
 }

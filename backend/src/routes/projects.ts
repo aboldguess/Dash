@@ -74,4 +74,79 @@ router.post('/:id/workpackages/:wpId/tasks', requireRole(['admin', 'teamAdmin'])
   res.status(201).json(project);
 });
 
+// Retrieve all work packages for a project
+router.get('/:id/workpackages', async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  res.json(project.workPackages);
+});
+
+// Update details for a specific work package
+router.patch('/:id/workpackages/:wpId', requireRole(['admin', 'teamAdmin']), async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  const wp = project.workPackages.id(req.params.wpId);
+  if (!wp) return res.status(404).json({ message: 'Work package not found' });
+  Object.assign(wp, req.body);
+  await project.save();
+  res.json(wp);
+});
+
+// Retrieve a single work package
+router.get('/:id/workpackages/:wpId', async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  const wp = project.workPackages.id(req.params.wpId);
+  if (!wp) return res.status(404).json({ message: 'Work package not found' });
+  res.json(wp);
+});
+
+// Remove a work package
+router.delete('/:id/workpackages/:wpId', requireRole(['admin', 'teamAdmin']), async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  const wp = project.workPackages.id(req.params.wpId);
+  if (!wp) return res.status(404).json({ message: 'Work package not found' });
+  wp.deleteOne();
+  await project.save();
+  res.json({ message: 'Work package removed' });
+});
+
+// Update individual tasks within a work package
+router.patch('/:id/workpackages/:wpId/tasks/:taskId', requireRole(['admin', 'teamAdmin']), async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  const wp = project.workPackages.id(req.params.wpId);
+  if (!wp) return res.status(404).json({ message: 'Work package not found' });
+  const task = wp.tasks.id(req.params.taskId);
+  if (!task) return res.status(404).json({ message: 'Task not found' });
+  Object.assign(task, req.body);
+  await project.save();
+  res.json(task);
+});
+
+// Retrieve a single task from a work package
+router.get('/:id/workpackages/:wpId/tasks/:taskId', async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  const wp = project.workPackages.id(req.params.wpId);
+  if (!wp) return res.status(404).json({ message: 'Work package not found' });
+  const task = wp.tasks.id(req.params.taskId);
+  if (!task) return res.status(404).json({ message: 'Task not found' });
+  res.json(task);
+});
+
+// Remove an individual task
+router.delete('/:id/workpackages/:wpId/tasks/:taskId', requireRole(['admin', 'teamAdmin']), async (req, res) => {
+  const project = await Project.findById(req.params.id).exec();
+  if (!project) return res.status(404).json({ message: 'Project not found' });
+  const wp = project.workPackages.id(req.params.wpId);
+  if (!wp) return res.status(404).json({ message: 'Work package not found' });
+  const task = wp.tasks.id(req.params.taskId);
+  if (!task) return res.status(404).json({ message: 'Task not found' });
+  task.deleteOne();
+  await project.save();
+  res.json({ message: 'Task removed' });
+});
+
 export default router;

@@ -29,7 +29,7 @@
       <!-- Configuration management -->
       <section id="config" class="admin-section">
         <h2>Configuration</h2>
-        <form onsubmit="createConfig(event)">
+        <form class="card" onsubmit="createConfig(event)">
           <input id="configKey" placeholder="Key" required />
           <input id="configValue" placeholder="Value" required />
           <button type="submit">Save</button>
@@ -40,7 +40,7 @@
       <!-- Team administration -->
       <section id="teams" class="admin-section hidden">
         <h2>Teams</h2>
-        <form onsubmit="createTeam(event)">
+        <form class="card" onsubmit="createTeam(event)">
           <input id="teamName" placeholder="Name" required />
           <input id="teamDomains" placeholder="Domains (comma separated)" />
           <input id="teamSeats" type="number" placeholder="Seats" value="5" />
@@ -53,7 +53,7 @@
       <!-- User management -->
       <section id="users" class="admin-section hidden">
         <h2>Users</h2>
-        <form onsubmit="createUser(event)">
+        <form class="card" onsubmit="createUser(event)">
           <input id="newUsername" placeholder="Email" required />
           <input id="newPassword" type="password" placeholder="Password" required />
           <select id="newUserTeam"></select>
