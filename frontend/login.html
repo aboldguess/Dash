@@ -17,10 +17,12 @@
   <!-- Login form -->
   <section class="hero">
     <h1>Login</h1>
-    <input id="username" placeholder="Username" />
-    <input id="password" placeholder="Password" type="password" />
-    <button onclick="login()">Login</button>
-    <p id="loginStatus"></p>
+    <form class="card" onsubmit="login(); return false;">
+      <input id="username" placeholder="Username" />
+      <input id="password" placeholder="Password" type="password" />
+      <button type="submit">Login</button>
+      <p id="loginStatus"></p>
+    </form>
     <p>Don't have an account? <a href="signup.html">Sign up</a></p>
   </section>
 

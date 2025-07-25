@@ -18,13 +18,13 @@
   <section class="hero">
     <h1>My Profile</h1>
     <img id="profileImage" class="avatar" alt="profile photo" />
-    <form id="profileForm" onsubmit="saveProfile(event)">
+    <form id="profileForm" class="card" onsubmit="saveProfile(event)">
       <input id="profileCareer" placeholder="Career history" />
       <input id="profileEducation" placeholder="Education" />
       <textarea id="profileStatement" placeholder="Personal statement"></textarea>
       <button type="submit">Save</button>
     </form>
-    <form id="photoForm" onsubmit="return false;">
+    <form id="photoForm" class="card" onsubmit="return false;">
       <input id="profilePhoto" type="file" accept="image/*" />
       <button type="button" onclick="uploadPhoto()">Upload Photo</button>
     </form>

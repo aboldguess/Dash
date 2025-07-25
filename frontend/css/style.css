@@ -56,6 +56,10 @@ header nav a:hover {
   margin-bottom: 1rem;
 }
 
+.hero .card {
+  width: 300px;
+}
+
 /* Layout for the dashboard with two sidebars similar to Slack/Teams */
 .main-layout {
   display: flex;
@@ -258,5 +262,14 @@ button:hover {
   margin-left: 0.5rem;
   font-size: 0.9rem;
   color: var(--color-muted);
+}
+
+/* Simple card container used to keep forms visually consistent */
+.card {
+  background: var(--color-light);
+  padding: 1rem;
+  border-radius: 4px;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+  margin-bottom: 1rem;
 }
 

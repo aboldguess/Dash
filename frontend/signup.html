@@ -17,14 +17,16 @@
   <!-- Signup form -->
   <section class="hero">
     <h1>Create Account</h1>
-    <input id="signupUsername" placeholder="Username" />
-    <input id="signupPassword" placeholder="Password" type="password" />
-    <input id="signupTeamName" placeholder="Team name (new teams)" />
-    <input id="signupSeats" type="number" placeholder="Seats" min="1" />
-    <input id="signupToken" placeholder="Invite token" />
-    <input placeholder="Payment details (processed on next step)" disabled />
-    <button onclick="signup()">Sign Up</button>
-    <p id="signupStatus"></p>
+    <form class="card" onsubmit="signup(); return false;">
+      <input id="signupUsername" placeholder="Username" />
+      <input id="signupPassword" placeholder="Password" type="password" />
+      <input id="signupTeamName" placeholder="Team name (new teams)" />
+      <input id="signupSeats" type="number" placeholder="Seats" min="1" />
+      <input id="signupToken" placeholder="Invite token" />
+      <input placeholder="Payment details (processed on next step)" disabled />
+      <button type="submit">Sign Up</button>
+      <p id="signupStatus"></p>
+    </form>
     <p>Already have an account? <a href="login.html">Login</a></p>
   </section>
 

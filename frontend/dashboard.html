@@ -51,7 +51,7 @@
       <!-- Placeholder sections for future tools -->
       <section id="crm" class="hidden">
         <h2>CRM</h2>
-        <form id="contactForm" onsubmit="saveContact(event)">
+        <form id="contactForm" class="card" onsubmit="saveContact(event)">
           <input id="contactId" type="hidden" />
           <input id="contactName" placeholder="Name" required />
           <input id="contactEmail" placeholder="Email" required />
@@ -65,7 +65,7 @@
       </section>
       <section id="projects" class="hidden">
         <h2>Projects</h2>
-        <form id="projectForm" onsubmit="saveProject(event)">
+        <form id="projectForm" class="card" onsubmit="saveProject(event)">
           <input id="projectId" type="hidden" />
           <input id="projectName" placeholder="Project name" required />
           <input id="projectOwner" placeholder="Owner" required />
@@ -76,6 +76,37 @@
           <textarea id="projectDesc" placeholder="Description"></textarea>
           <button type="submit">Save</button>
         </form>
+
+        <div id="workPackageSection" class="hidden">
+          <h3>Work Packages</h3>
+          <form id="workPackageForm" class="card" onsubmit="saveWorkPackage(event)">
+            <input id="wpProject" type="hidden" />
+            <input id="wpId" type="hidden" />
+            <input id="wpName" placeholder="Work package name" required />
+            <input id="wpOwner" placeholder="Owner" />
+            <input id="wpStart" type="date" />
+            <input id="wpEnd" type="date" />
+            <input id="wpHours" type="number" placeholder="Hours" />
+            <input id="wpCost" type="number" placeholder="£ Cost" />
+            <button type="submit">Save Work Package</button>
+          </form>
+          <table class="admin-table" id="workPackageTable"></table>
+
+          <h4>Tasks</h4>
+          <form id="taskForm" class="card" onsubmit="saveTask(event)">
+            <input id="taskProject" type="hidden" />
+            <input id="taskWp" type="hidden" />
+            <input id="taskId" type="hidden" />
+            <input id="taskName" placeholder="Task name" required />
+            <input id="taskOwner" placeholder="Owner" />
+            <input id="taskStart" type="date" />
+            <input id="taskEnd" type="date" />
+            <input id="taskHours" type="number" placeholder="Hours" />
+            <input id="taskCost" type="number" placeholder="£ Cost" />
+            <button type="submit">Save Task</button>
+          </form>
+          <table class="admin-table" id="taskTable"></table>
+        </div>
         <div id="gantt"></div>
         <table class="admin-table" id="projectTable"></table>
       </section>
@@ -89,7 +120,7 @@
       </section>
       <section id="social" class="hidden">
         <h2>Social</h2>
-        <form id="postForm" onsubmit="savePost(event)">
+        <form id="postForm" class="card" onsubmit="savePost(event)">
           <textarea id="postText" placeholder="Share an update" required></textarea>
           <button type="submit">Post</button>
         </form>
