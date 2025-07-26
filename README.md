@@ -30,6 +30,14 @@ Dash is an example enterprise web platform demonstrating several features:
    npm run build
    npm start
    ```
+
+### Windows quick start
+Run the PowerShell script to install dependencies, initialise the database, build and launch the backend on a chosen port:
+```powershell
+powershell -ExecutionPolicy Bypass -File .\start-windows.ps1 -port 4000
+```
+The `-port` argument is optional and defaults to `3000`.
+ 
   Browse to `http://localhost:3000` and the web interface should load
   without a separate static file server.
   The frontend now uses `window.location.origin` for API requests so it
