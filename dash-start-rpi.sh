@@ -16,6 +16,7 @@ exec > >(tee -i "$LOG_FILE") 2>&1
 
 PORT=3000
 PROD=false
+DB_URI="${DB_URI:-mongodb://localhost:27017/dash}"
 
 usage() {
   echo "Usage: $0 [-p PORT] [--prod]"
@@ -63,6 +64,40 @@ fi
 
 # Move to backend directory relative to script location
 cd "$(dirname "$0")/backend"
+
+# Ensure an environment configuration exists so the backend knows how to
+# reach MongoDB. If the user hasn't created one, fall back to the provided
+# example file and use a sensible default `DB_URI`.
+if [[ ! -f .env && -f .env.example ]]; then
+  echo "No .env file found. Copying default .env.example..."
+  cp .env.example .env
+fi
+
+export DB_URI
+echo "Using database URI: $DB_URI"
+
+# Attempt to start a MongoDB instance if one isn't already available on the
+# default localhost port. This uses Docker when available so Raspberry Pi
+# users don't need to manually install MongoDB.
+if [[ "$DB_URI" == "mongodb://localhost:27017/dash" ]]; then
+  if command -v nc >/dev/null 2>&1 && ! nc -z localhost 27017 >/dev/null 2>&1; then
+    echo "MongoDB not detected on localhost:27017. Attempting to launch Docker container..."
+    if command -v docker >/dev/null 2>&1; then
+      docker rm -f dash-mongo >/dev/null 2>&1 || true
+      docker run -d --name dash-mongo -p 27017:27017 -v "$(pwd)/mongo-data:/data/db" mongo:6 >/dev/null 2>&1 || echo "Failed to start MongoDB via Docker"
+      echo "Waiting for MongoDB to be ready..."
+      for i in {1..10}; do
+        if nc -z localhost 27017 >/dev/null 2>&1; then
+          echo "MongoDB is up."
+          break
+        fi
+        sleep 2
+      done
+    else
+      echo "Docker not installed; please install MongoDB manually or set DB_URI to an external server."
+    fi
+  fi
+fi
 
 echo "Installing npm dependencies..."
 npm install
