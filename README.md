@@ -37,13 +37,24 @@ Run the PowerShell script to install dependencies, initialise the database, buil
 powershell -ExecutionPolicy Bypass -File .\start-windows.ps1 -port 4000
 ```
 The `-port` argument is optional and defaults to `3000`.
- 
+
   Browse to `http://localhost:3000` and the web interface should load
   without a separate static file server.
   The frontend now uses `window.location.origin` for API requests so it
   automatically points to the host that served the page. If your backend
   runs on a different host or port, update `API_BASE_URL` in
   `frontend/js/app.js` accordingly.
+
+### Raspberry Pi quick start
+The `dash-start-rpi.sh` script sets up and runs the backend on Raspberry Pi or other Linux systems. It installs Node.js 18 if required, installs project dependencies, initialises the database, builds the code and launches the server.
+
+```bash
+chmod +x ./dash-start-rpi.sh
+./dash-start-rpi.sh --port 4000        # development mode on port 4000
+./dash-start-rpi.sh --port 4000 --prod # production mode on port 4000
+```
+
+Omit `--prod` to run in development mode with automatic reloading. The `--port` argument defaults to `3000`.
 
 ### Docker
 
