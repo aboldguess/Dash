@@ -46,7 +46,7 @@ The `-port` argument is optional and defaults to `3000`.
   `frontend/js/app.js` accordingly.
 
 ### Raspberry Pi quick start
-The `dash-start-rpi.sh` script sets up and runs the backend on Raspberry Pi or other Linux systems. It installs Node.js 18 if required, installs project dependencies, initialises the database, builds the code and launches the server.
+The `dash-start-rpi.sh` script sets up and runs the backend on Raspberry Pi or other Linux systems. It installs Node.js 18 if required, installs project dependencies, initialises the database, builds the code and launches the server. If a local MongoDB instance is not detected the script will attempt to start one using Docker for convenience.
 
 ```bash
 chmod +x ./dash-start-rpi.sh
@@ -70,9 +70,9 @@ The frontend can be hosted separately or served by any static web server.
 ## Database Setup
 
 The backend now requires access to a MongoDB instance. Copy the provided
-`.env.example` to `.env` inside `backend/` and update the `DB_URI` value if your
-database runs elsewhere. Alternatively you can export the variable in your
-shell:
+`.env.example` to `.env` inside `backend/`. The Raspberry Pi start script will
+do this automatically if the file is missing. Update the `DB_URI` value if your
+database runs elsewhere. Alternatively you can export the variable in your shell:
 
 ```bash
 export DB_URI="mongodb://localhost:27017/dash"
