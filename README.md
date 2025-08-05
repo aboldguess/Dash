@@ -32,11 +32,20 @@ Dash is an example enterprise web platform demonstrating several features:
    ```
 
 ### Windows quick start
-Run the PowerShell script to install dependencies, initialise the database, build and launch the backend on a chosen port:
+Run the PowerShell script to install dependencies, initialise the database,
+attempt to launch a local MongoDB instance via Docker, build and launch the
+backend on a chosen port:
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-windows.ps1 -port 4000
 ```
-The `-port` argument is optional and defaults to `3000`.
+The `-port` argument is optional and defaults to `3000`. Use `-prod` to run in
+production mode or `-dbUri` to point to an external MongoDB server. All output
+is recorded in `dash_windows_start.log` for troubleshooting.
+
+If the script fails, open `dash_windows_start.log` to see what went wrong.
+Common issues include Docker not being installed or MongoDB failing to start.
+Install Docker or start MongoDB manually and rerun the script, or provide a
+custom `-dbUri` value.
 
   Browse to `http://localhost:3000` and the web interface should load
   without a separate static file server.
@@ -48,7 +57,11 @@ The `-port` argument is optional and defaults to `3000`.
 ### Raspberry Pi quick start
 The `dash-start-rpi.sh` script sets up and runs the backend on Raspberry Pi or other Linux systems. It installs Node.js 18 if required, installs project dependencies, initialises the database, builds the code and launches the server. If a local MongoDB instance is not detected the script will attempt to start one using Docker for convenience.
 
-All output from the script is recorded in `dash_rpi_start.log` so problems can be reviewed after the fact. When the backend cannot reach MongoDB it now prints the connection URI it attempted so configuration issues are easier to spot.
+All output from the script is recorded in `dash_rpi_start.log` so problems can be
+reviewed after the fact. If the script fails, inspect this log and ensure Docker
+is installed or provide a `DB_URI` pointing to a reachable MongoDB server. When
+the backend cannot reach MongoDB it prints the connection URI it attempted so
+configuration issues are easier to spot.
 
 ```bash
 chmod +x ./dash-start-rpi.sh
