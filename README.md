@@ -1,5 +1,6 @@
 # Dash
 
+## Overview
 Dash is an example enterprise web platform demonstrating several features:
 
 - Instant messaging with multiple channels, presence indicators and message editing
@@ -12,125 +13,162 @@ Dash is an example enterprise web platform demonstrating several features:
 - Browser-based UI designed to be responsive and mobile friendly with a consistent card layout
 - Dockerised backend for easy deployment
 
-## Getting Started
+## Prerequisites
+Dash requires Node.js 18+, npm, Docker and access to a MongoDB database.
 
-### Prerequisites
-- Node.js 18+
-- npm
+### Install Node.js
+#### Windows
+1. Install [nvm for Windows](https://github.com/coreybutler/nvm-windows) or download the LTS installer from [nodejs.org](https://nodejs.org/).
+2. Use nvm to install Node.js 18:
+   ```powershell
+   nvm install 18
+   nvm use 18
+   ```
+3. Verify installation:
+   ```powershell
+   node -v
+   npm -v
+   ```
 
-### Running locally
+#### Linux/Raspberry Pi
+1. Install nvm and Node.js 18:
+   ```bash
+   curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.5/install.sh | bash
+   source ~/.nvm/nvm.sh
+   nvm install 18
+   ```
+2. Confirm with:
+   ```bash
+   node -v
+   npm -v
+   ```
 
-1. Install dependencies and start the server (which now also serves the
-   frontend):
+### Install Docker
+#### Windows
+1. Install Docker Desktop from <https://www.docker.com/products/docker-desktop/> or via `winget`:
+   ```powershell
+   winget install Docker.DockerDesktop
+   ```
+2. Start Docker Desktop and ensure it works:
+   ```powershell
+   docker --version
+   ```
+
+#### Linux/Raspberry Pi
+1. Run the convenience script:
+   ```bash
+   curl -fsSL https://get.docker.com -o get-docker.sh
+   sudo sh get-docker.sh
+   sudo usermod -aG docker $USER
+   ```
+2. Log out and back in, then verify:
+   ```bash
+   docker --version
+   ```
+
+### Install MongoDB
+#### Windows
+1. Install MongoDB Community Server from <https://www.mongodb.com/try/download/community> or with `winget`:
+   ```powershell
+   winget install MongoDB.MongoDBServer
+   ```
+2. Start the MongoDB service and check:
+   ```powershell
+   mongod --version
+   ```
+
+#### Linux/Raspberry Pi
+1. On Debian/Ubuntu systems:
+   ```bash
+   sudo apt update
+   sudo apt install -y mongodb
+   sudo systemctl enable --now mongodb
+   ```
+   If packages are unavailable or you prefer Docker:
+   ```bash
+   docker run -d --name mongo -p 27017:27017 -v mongo-data:/data/db mongo:6
+   ```
+2. Verify with:
+   ```bash
+   mongod --version   # or: docker ps
+   ```
+
+## Project Setup
+1. Clone this repository.
+2. Copy `backend/.env.example` to `backend/.env` and set `DB_URI` to your MongoDB connection string. Optionally set `JWT_SECRET` for token signing.
+3. Install dependencies:
    ```bash
    cd backend
    npm install
-   # optional: verify database connection
-   npm run db:init
-   npm run build
-   npm start
    ```
 
-### Windows quick start
-Run the PowerShell script to install dependencies, initialise the database,
-attempt to launch a local MongoDB instance via Docker, build and launch the
-backend on a chosen port:
+## Running the App
+
+### Quick Start Scripts
+#### Windows
+Run the PowerShell script to install dependencies, initialise the database, attempt to launch a local MongoDB instance via Docker, build and start the backend:
+
 ```powershell
 powershell -ExecutionPolicy Bypass -File .\start-windows.ps1 -port 4000
 ```
-The `-port` argument is optional and defaults to `3000`. Use `-prod` to run in
-production mode or `-dbUri` to point to an external MongoDB server. All output
-is recorded in `dash_windows_start.log` for troubleshooting.
 
-If the script fails, open `dash_windows_start.log` to see what went wrong.
-Common issues include Docker not being installed or MongoDB failing to start.
-Install Docker or start MongoDB manually and rerun the script, or provide a
-custom `-dbUri` value.
+Options:
 
-  Browse to `http://localhost:3000` and the web interface should load
-  without a separate static file server.
-  The frontend now uses `window.location.origin` for API requests so it
-  automatically points to the host that served the page. If your backend
-  runs on a different host or port, update `API_BASE_URL` in
-  `frontend/js/app.js` accordingly.
+- `-port` — port to run the server (default `3000`)
+- `-prod` — run in production mode
+- `-dbUri` — specify an external MongoDB URI
 
-### Raspberry Pi quick start
-The `dash-start-rpi.sh` script sets up and runs the backend on Raspberry Pi or other Linux systems. It installs Node.js 18 if required, installs project dependencies, initialises the database, builds the code and launches the server. If a local MongoDB instance is not detected the script will attempt to start one using Docker for convenience.
+All output is logged to `dash_windows_start.log`.
 
-All output from the script is recorded in `dash_rpi_start.log` so problems can be
-reviewed after the fact. If the script fails, inspect this log and ensure Docker
-is installed or provide a `DB_URI` pointing to a reachable MongoDB server. When
-the backend cannot reach MongoDB it prints the connection URI it attempted so
-configuration issues are easier to spot.
+#### Raspberry Pi / Linux
+The `dash-start-rpi.sh` script installs Node.js 18 if required, installs dependencies, initialises the database, builds the code and launches the server. It also tries to start MongoDB in Docker if no local instance is detected.
 
 ```bash
 chmod +x ./dash-start-rpi.sh
-./dash-start-rpi.sh --port 4000        # development mode on port 4000
-./dash-start-rpi.sh --port 4000 --prod # production mode on port 4000
+./dash-start-rpi.sh --port 4000        # development mode
+./dash-start-rpi.sh --port 4000 --prod # production mode
 ```
 
-Omit `--prod` to run in development mode with automatic reloading. The `--port` argument defaults to `3000`.
+Logs are written to `dash_rpi_start.log`.
 
-### Docker
-
-To run the backend via Docker:
-
-```bash
-docker build -t dash-backend ./backend
-docker run -p 3000:3000 dash-backend
-```
-
-The frontend can be hosted separately or served by any static web server.
-
-## Database Setup
-
-The backend now requires access to a MongoDB instance. Copy the provided
-`.env.example` to `.env` inside `backend/`. The Raspberry Pi start script will
-do this automatically if the file is missing. Update the `DB_URI` value if your
-database runs elsewhere. Alternatively you can export the variable in your shell:
-
-```bash
-export DB_URI="mongodb://localhost:27017/dash"
-```
-
-Running `npm run db:init` will attempt to connect using this value. If the
-connection succeeds, the server can be started normally with `npm start`.
-
-The sign-up page will create a new team when a name is provided. Payment is
-currently simulated server-side so the flow can be tested without real billing
-details. Replace `processPayment` in `backend/src/payments.ts` with an actual
-gateway integration when ready.
-
-## Setup
-
-1. Copy `backend/.env.example` to `backend/.env` and edit the `DB_URI` to point
-   to your MongoDB instance. Optionally set `JWT_SECRET` for token signing.
-2. Install dependencies and build the backend:
-
+### Manual Run
+1. Ensure `DB_URI` is set (either in `backend/.env` or exported in the shell).
+2. Initialise the database:
    ```bash
    cd backend
-   npm install
+   npm run db:init
+   ```
+3. Build and start the server:
+   ```bash
    npm run build
    npm start
    ```
 
+Browse to `http://localhost:3000`. The frontend uses `window.location.origin` for API requests, so it points to the host that served the page. If your backend runs elsewhere, update `API_BASE_URL` in `frontend/js/app.js`.
+
+### Docker Container
+To build and run the backend in Docker:
+
+```bash
+docker build -t dash-backend ./backend
+docker run -p 3000:3000 -e DB_URI=mongodb://localhost:27017/dash dash-backend
+```
+
+Serve the frontend with any static web server.
+
 ## Admin Configuration
+Administrators can manage runtime settings via the `/api/admin/config` endpoints:
 
-Administrators can manage runtime settings via the new `/api/admin/config`
-endpoints:
+- `POST /api/admin/config` – create or update a configuration value
+- `GET /api/admin/config` – list all stored configuration values
 
-- `POST /api/admin/config` &ndash; create or update a configuration value
-- `GET /api/admin/config` &ndash; list all stored configuration values
-
-These endpoints require an authenticated user with the `admin` role.
-
-The repository seeds a default administrator account for demo purposes:
+A default administrator account is seeded for demo purposes:
 
 - **Username:** `admin`
 - **Password:** `Admin12345`
 
-After logging in with this account, an admin dashboard is available at
-`/admin.html`. The dashboard lets admins manage configuration values, create
-and edit teams including seat counts and view all registered users. It remains
-a lightweight interface but now exposes enough controls to administer the
-demo data without resorting to API calls.
+After logging in, visit `/admin.html` to access the dashboard for managing configuration values, teams and users.
+
+## Troubleshooting
+- If a start script fails, review `dash_windows_start.log` or `dash_rpi_start.log` for details.
+- When the backend cannot reach MongoDB it prints the connection URI it attempted, making configuration issues easier to spot.
