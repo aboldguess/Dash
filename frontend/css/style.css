@@ -29,6 +29,19 @@ header {
   padding: 1rem;
 }
 
+/* Flex layout keeps brand on the left and profile menu on the right */
+header nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+/* Optional container for additional navigation links */
+header nav .nav-links {
+  display: flex;
+  gap: 1rem;
+}
+
 header nav a {
   color: var(--color-light);
   margin-right: 1rem;
@@ -38,6 +51,47 @@ header nav a {
 
 header nav a:hover {
   text-decoration: underline;
+}
+
+/* Profile avatar button and dropdown */
+.profile {
+  position: relative;
+}
+
+.profile-button {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  cursor: pointer;
+}
+
+.profile-menu {
+  position: absolute;
+  top: 40px;
+  right: 0;
+  background: var(--color-light);
+  color: var(--color-text);
+  border: 1px solid var(--color-muted);
+  border-radius: 4px;
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  min-width: 200px;
+  z-index: 1000;
+}
+
+.profile-menu li {
+  padding: 0.5rem 1rem;
+}
+
+.profile-menu li:hover {
+  background: var(--color-background);
+}
+
+.profile-menu a {
+  color: var(--color-text);
+  text-decoration: none;
+  display: block;
 }
 
 /* Landing page hero section */

@@ -43,6 +43,26 @@ let selectedUser = null; // username of direct message recipient
 let unreadCounts = {};
 let activeTool = 'messages'; // currently selected tool
 
+/** Toggle the visibility of the profile dropdown menu. */
+function toggleProfileMenu() {
+  const menu = document.getElementById('profileMenu');
+  if (menu) {
+    menu.classList.toggle('hidden');
+    console.debug('Profile menu toggled');
+  }
+}
+
+// Hide the profile menu when clicking anywhere outside of it
+document.addEventListener('click', event => {
+  const menu = document.getElementById('profileMenu');
+  const avatar = document.getElementById('navAvatar');
+  if (menu && !menu.classList.contains('hidden')) {
+    if (avatar && !avatar.contains(event.target) && !menu.contains(event.target)) {
+      menu.classList.add('hidden');
+    }
+  }
+});
+
 // Switch between major tools (messaging, CRM, etc.) and update layout
 function selectTool(tool) {
   activeTool = tool;
@@ -398,13 +418,20 @@ function checkAuth() {
   // Store all relevant details for convenience in other functions
   currentUser = { username, token, avatarUrl, role };
 
-  // Display the admin navigation link only when the logged in user is an admin
-  const adminLink = document.getElementById('adminLink');
-  if (adminLink) {
+  // Populate the navbar avatar if present
+  const avatarImg = document.getElementById('navAvatar');
+  if (avatarImg) {
+    avatarImg.src = avatarUrl;
+    avatarImg.alt = `${username} profile`;
+  }
+
+  // Show the "Manage Users" menu option only for admins
+  const manageUsersLink = document.getElementById('manageUsersLink');
+  if (manageUsersLink) {
     if (role === 'admin') {
-      adminLink.classList.remove('hidden');
+      manageUsersLink.classList.remove('hidden');
     } else {
-      adminLink.classList.add('hidden');
+      manageUsersLink.classList.add('hidden');
     }
   }
 
