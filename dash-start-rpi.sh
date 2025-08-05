@@ -13,6 +13,8 @@ set -euo pipefail
 LOG_FILE="dash_rpi_start.log"
 # Redirect all output to console and log file for debugging
 exec > >(tee -i "$LOG_FILE") 2>&1
+# Inform the user where logs are stored for later inspection
+echo "Logging output to $LOG_FILE"
 
 PORT=3000
 PROD=false
@@ -80,19 +82,32 @@ echo "Using database URI: $DB_URI"
 # default localhost port. This uses Docker when available so Raspberry Pi
 # users don't need to manually install MongoDB.
 if [[ "$DB_URI" == "mongodb://localhost:27017/dash" ]]; then
-  if command -v nc >/dev/null 2>&1 && ! nc -z localhost 27017 >/dev/null 2>&1; then
-    echo "MongoDB not detected on localhost:27017. Attempting to launch Docker container..."
+  if command -v nc >/dev/null 2>&1; then
+    if ! nc -z localhost 27017 >/dev/null 2>&1; then
+      echo "MongoDB not detected on localhost:27017. Attempting to launch Docker container..."
+      if command -v docker >/dev/null 2>&1; then
+        docker rm -f dash-mongo >/dev/null 2>&1 || true
+        docker run -d --name dash-mongo -p 27017:27017 -v "$(pwd)/mongo-data:/data/db" mongo:6 >/dev/null 2>&1 || echo "Failed to start MongoDB via Docker"
+        echo "Waiting for MongoDB to be ready..."
+        for i in {1..10}; do
+          if nc -z localhost 27017 >/dev/null 2>&1; then
+            echo "MongoDB is up."
+            break
+          fi
+          sleep 2
+        done
+      else
+        echo "Docker not installed; please install MongoDB manually or set DB_URI to an external server."
+      fi
+    fi
+  else
+    echo "Warning: netcat (nc) not found. Unable to verify MongoDB status."
+    echo "Attempting to start MongoDB via Docker..."
     if command -v docker >/dev/null 2>&1; then
       docker rm -f dash-mongo >/dev/null 2>&1 || true
       docker run -d --name dash-mongo -p 27017:27017 -v "$(pwd)/mongo-data:/data/db" mongo:6 >/dev/null 2>&1 || echo "Failed to start MongoDB via Docker"
-      echo "Waiting for MongoDB to be ready..."
-      for i in {1..10}; do
-        if nc -z localhost 27017 >/dev/null 2>&1; then
-          echo "MongoDB is up."
-          break
-        fi
-        sleep 2
-      done
+      echo "Waiting briefly for MongoDB to start..."
+      sleep 5
     else
       echo "Docker not installed; please install MongoDB manually or set DB_URI to an external server."
     fi
