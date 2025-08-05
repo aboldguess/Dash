@@ -48,6 +48,8 @@ The `-port` argument is optional and defaults to `3000`.
 ### Raspberry Pi quick start
 The `dash-start-rpi.sh` script sets up and runs the backend on Raspberry Pi or other Linux systems. It installs Node.js 18 if required, installs project dependencies, initialises the database, builds the code and launches the server. If a local MongoDB instance is not detected the script will attempt to start one using Docker for convenience.
 
+All output from the script is recorded in `dash_rpi_start.log` so problems can be reviewed after the fact. When the backend cannot reach MongoDB it now prints the connection URI it attempted so configuration issues are easier to spot.
+
 ```bash
 chmod +x ./dash-start-rpi.sh
 ./dash-start-rpi.sh --port 4000        # development mode on port 4000

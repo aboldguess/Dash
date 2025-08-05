@@ -193,7 +193,14 @@ if (require.main === module) {
       });
     })
     .catch(err => {
-      console.error('Failed to connect to database', err);
+      // Surface detailed information about the database connection
+      // attempt so users can more easily diagnose issues such as a
+      // missing MongoDB service or an incorrect connection string.
+      const attemptedUri = process.env.DB_URI || 'DB_URI not set';
+      console.error('Failed to connect to MongoDB.');
+      console.error(`Attempted URI: ${attemptedUri}`);
+      console.error('Ensure the database is running and accessible.');
+      console.error(err);
       process.exit(1);
     });
 }
