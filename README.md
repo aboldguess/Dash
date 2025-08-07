@@ -96,7 +96,11 @@ Dash requires Node.js 18+, npm, Docker and access to a MongoDB database.
 ## Project Setup
 1. Clone this repository.
 2. Copy `backend/.env.example` to `backend/.env` and set `DB_URI` to your MongoDB connection string. Optionally set `JWT_SECRET` for token signing.
-3. Install dependencies:
+3. Install dependencies from the repository root (this installs the backend automatically):
+   ```bash
+   npm install
+   ```
+   You can still install directly in the backend directory if preferred:
    ```bash
    cd backend
    npm install
