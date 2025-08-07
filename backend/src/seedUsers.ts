@@ -1,12 +1,15 @@
+/**
+ * @fileoverview Database seeding utilities.
+ *
+ * Populates the database with demo users and teams for local development.
+ * An administrator account is only created when `ADMIN_USERNAME` and
+ * `ADMIN_PASSWORD` environment variables are provided, avoiding predictable
+ * default credentials in production.
+ */
 import bcrypt from 'bcrypt';
 import { User } from './models/user';
 import { Team } from './models/team';
 
-/**
- * Ensure a set of demo users exist in the database. Each user has the
- * same value for username and password so they are easy to log in with
- * during demos.
- */
 export async function seedUsers(): Promise<void> {
   // Create demo teams if needed
   const [teamA, teamB] = await Promise.all([
@@ -31,13 +34,14 @@ export async function seedUsers(): Promise<void> {
     { upsert: true, new: true }
   );
 
-  // Ensure an administrator user exists so the admin panel can be accessed.
-  // The username/password are fixed for demo purposes only and should be
-  // changed in production deployments.
-  if (!(await User.exists({ username: 'admin' }))) {
-    const hashed = await bcrypt.hash('Admin12345', 10);
+  // Optionally create an administrator user if credentials are provided via
+  // environment variables. This avoids shipping with a hard-coded admin login.
+  const adminUsername = process.env.ADMIN_USERNAME;
+  const adminPassword = process.env.ADMIN_PASSWORD;
+  if (adminUsername && adminPassword && !(await User.exists({ username: adminUsername }))) {
+    const hashed = await bcrypt.hash(adminPassword, 10);
     const adminUser = new User({
-      username: 'admin',
+      username: adminUsername,
       password: hashed,
       role: 'admin',
       team: adminTeam._id,

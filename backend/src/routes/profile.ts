@@ -1,3 +1,10 @@
+/**
+ * @fileoverview User profile routes.
+ *
+ * Allows authenticated users to retrieve and update their profile information
+ * and upload a profile photo. Uploaded files are restricted to images and
+ * stored on disk with their original extension preserved.
+ */
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
@@ -10,7 +17,26 @@ const router = Router();
 // root so uploads end up in `<project>/backend/uploads` regardless of whether
 // the TypeScript source or compiled JavaScript is executed.
 const uploadDir = path.resolve(__dirname, '..', '..', 'uploads');
-const upload = multer({ dest: uploadDir });
+
+// Configure multer to only accept image files and preserve their extensions.
+const storage = multer.diskStorage({
+  destination: uploadDir,
+  filename: (_req, file, cb) => {
+    const ext = path.extname(file.originalname);
+    cb(null, `photo-${Date.now()}${ext}`);
+  }
+});
+
+const upload = multer({
+  storage,
+  fileFilter: (_req, file, cb) => {
+    if (file.mimetype.startsWith('image/')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Only image uploads are allowed'));
+    }
+  }
+});
 
 // All profile endpoints require authentication
 router.use(authMiddleware);

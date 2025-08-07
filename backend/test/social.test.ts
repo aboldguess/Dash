@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Tests for social features such as posts and follows.
+ */
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
@@ -5,6 +8,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 
 jest.setTimeout(20000);
+process.env.JWT_SECRET = 'testsecret';
 import { app } from '../src/index';
 import { connectDB } from '../src/db';
 import { User } from '../src/models/user';
@@ -16,6 +20,7 @@ let userAId: string;
 let userBId: string;
 
 beforeAll(async () => {
+  process.env.JWT_SECRET = 'testsecret';
   mongo = await MongoMemoryServer.create();
   process.env.DB_URI = mongo.getUri();
   await connectDB();
@@ -41,8 +46,8 @@ beforeAll(async () => {
 
   userAId = a.id;
   userBId = b.id;
-  tokenA = jwt.sign({ id: a.id, username: a.username, role: a.role }, 'secret');
-  tokenB = jwt.sign({ id: b.id, username: b.username, role: b.role }, 'secret');
+  tokenA = jwt.sign({ id: a.id, username: a.username, role: a.role }, process.env.JWT_SECRET!);
+  tokenB = jwt.sign({ id: b.id, username: b.username, role: b.role }, process.env.JWT_SECRET!);
 });
 
 afterAll(async () => {
