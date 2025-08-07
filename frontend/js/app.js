@@ -11,9 +11,15 @@
  *  - DOM insertion uses element.textContent where possible to limit XSS risk.
  *
  * The base URL assumes the backend is served from the same origin as the
- * frontend. Replace API_BASE_URL if your backend is on a different host.
+ * frontend. When pages are opened directly from the filesystem (no origin)
+ * we fall back to `http://localhost:3000` so local testing still reaches the
+ * backend without editing this file. Replace `API_BASE_URL` if your backend
+ * runs elsewhere.
  */
-const API_BASE_URL = window.location.origin;
+const API_BASE_URL =
+  window.location.origin && window.location.origin.startsWith('http')
+    ? window.location.origin
+    : 'http://localhost:3000';
 
 // Promise used to ensure the Socket.IO client library is loaded before
 // attempting to create a connection. If the script tag included in the
@@ -131,12 +137,15 @@ function login() {
 
   // Use the API base URL for all requests so the frontend works even
   // when served on a different port from the backend.
+  console.debug('Attempting login', { username });
   fetch(`${API_BASE_URL}/api/auth/login`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   })
-    .then(r => r.ok ? r.json() : Promise.reject('Login failed'))
+    .then(r =>
+      r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Login failed'))
+    )
     .then(u => {
       // Persist auth details in sessionStorage so other pages can verify
       // login state without leaving tokens sitting in long-term storage.
@@ -152,7 +161,8 @@ function login() {
       window.location.href = 'dashboard.html';
     })
     .catch(err => {
-      document.getElementById('loginStatus').textContent = err;
+      console.error('Login request failed', err);
+      document.getElementById('loginStatus').textContent = `Login failed: ${err}`;
     });
 }
 
@@ -168,12 +178,15 @@ function signup() {
   // Send the collected details to the signup endpoint. When a team name is
   // supplied the backend will create the team and process a dummy payment
   // before completing registration.
+  console.debug('Attempting signup', { username, teamName, seats });
   fetch(`${API_BASE_URL}/api/auth/signup`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, teamName, token, seats })
   })
-    .then(r => r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed')))
+    .then(r =>
+      r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed'))
+    )
     .then(u => {
       // Inform the user and send them to the login page
       document.getElementById('signupStatus').textContent = `Account ${u.username} created`;
@@ -182,7 +195,8 @@ function signup() {
       }, 1000);
     })
     .catch(err => {
-      document.getElementById('signupStatus').textContent = err;
+      console.error('Signup request failed', err);
+      document.getElementById('signupStatus').textContent = `Signup failed: ${err}`;
     });
 }
 
