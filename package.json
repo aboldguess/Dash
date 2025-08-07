@@ -1,0 +1,14 @@
+{
+  "name": "dash-root",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Root configuration enabling npm install from repository root and delegating operations to the backend service.",
+  "scripts": {
+    "postinstall": "npm install --prefix backend",
+    "start": "npm start --prefix backend",
+    "build": "npm run build --prefix backend",
+    "dev": "npm run dev --prefix backend",
+    "db:init": "npm run db:init --prefix backend",
+    "test": "npm test --prefix backend"
+  }
+}
