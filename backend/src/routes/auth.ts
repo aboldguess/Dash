@@ -1,9 +1,20 @@
 /**
  * @fileoverview Authentication and registration routes.
  *
- * Provides endpoints for logging in and signing up. All incoming data is
- * validated using `express-validator` before processing. JWT signing requires
- * the `JWT_SECRET` environment variable.
+ * Mini-README
+ * ------------
+ * This module exports an Express router that manages user authentication.
+ *
+ * Structure
+ * 1. Import required libraries, models, and utilities.
+ * 2. Configure the JWT secret and instantiate the router.
+ * 3. `/login` – validates credentials and issues a JWT with centralized error
+ *    handling to avoid leaking internal details.
+ * 4. `/signup` – registers new users, optionally creating or joining teams.
+ * 5. Router is exported for mounting in the main application.
+ *
+ * All incoming data is validated using `express-validator` before processing.
+ * JWT signing requires the `JWT_SECRET` environment variable.
  */
 import { Router } from 'express';
 import bcrypt from 'bcrypt';
@@ -22,48 +33,56 @@ if (!JWT_SECRET) {
 const router = Router();
 
 // Login endpoint. Compares hashed passwords and returns a JWT on success.
+// All database lookups and hashing operations are wrapped in a try/catch so any
+// unexpected failures surface cleanly and do not expose internals.
 router.post(
   '/login',
   body('username').isString().trim().notEmpty(),
   body('password').isString().trim().notEmpty(),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
+      }
 
-    const { username, password } = req.body;
+      const { username, password } = req.body;
 
-    // Look up the user by username only - passwords are hashed in the DB
-    const user = await User.findOne({ username }).exec();
-    if (!user) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+      // Look up the user by username only - passwords are hashed in the DB
+      const user = await User.findOne({ username }).exec();
+      if (!user) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
 
-    // Verify that the provided password matches the stored hash
-    const valid = await bcrypt.compare(password, user.password);
-    if (!valid) {
-      return res.status(401).json({ message: 'Invalid credentials' });
-    }
+      // Verify that the provided password matches the stored hash
+      const valid = await bcrypt.compare(password, user.password);
+      if (!valid) {
+        return res.status(401).json({ message: 'Invalid credentials' });
+      }
 
-    // Build a signed JWT containing the user id and role
-    const token = jwt.sign(
-      {
-        id: String(user._id),
+      // Build a signed JWT containing the user id and role
+      const token = jwt.sign(
+        {
+          id: String(user._id),
+          username: user.username,
+          role: user.role,
+          team: user.team ? String(user.team) : undefined
+        },
+        JWT_SECRET,
+        { expiresIn: '1h' }
+      );
+
+      res.json({
+        id: user._id,
         username: user.username,
         role: user.role,
-        team: user.team ? String(user.team) : undefined
-      },
-      JWT_SECRET,
-      { expiresIn: '1h' }
-    );
-
-    res.json({
-      id: user._id,
-      username: user.username,
-      role: user.role,
-      token
-    });
+        token
+      });
+    } catch (err) {
+      console.error('Login error:', err);
+      res.status(500).json({ message: 'Server error' });
+      next(err);
+    }
   }
 );
 
