@@ -6,6 +6,7 @@
  * limiting, strict CORS controls, and authenticated serving of uploaded files.
  */
 import express from 'express';
+import type { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import helmet from 'helmet';
@@ -211,6 +212,14 @@ app.get('/api', (_, res) => {
 app.use((_, res) => {
   res.sendFile(path.join(frontendDir, 'index.html'));
 });
+
+// Global error handler to capture unexpected issues across routes
+app.use(
+  (err: any, _req: Request, res: Response, _next: NextFunction) => {
+    console.error(err.stack);
+    res.status(err.status || 500).json({ message: err.message });
+  }
+);
 
 // Connect to MongoDB then start the HTTP server
 if (require.main === module) {
