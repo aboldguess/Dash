@@ -153,10 +153,18 @@ function login() {
       if (contentType.includes('application/json')) {
         const data = JSON.parse(text);
         if (r.ok) return data;
-        throw new Error(data.message || 'Login failed');
+        // Include HTTP status for clearer error reporting downstream
+        const error = new Error(data.message || 'Login failed');
+        error.status = r.status;
+        throw error;
       }
+      // Non-JSON response indicates a server-side problem or misconfiguration
       console.error('Unexpected response format', text);
-      throw new Error('Unexpected response from server');
+      const error = new Error(
+        `Unexpected response from server (status ${r.status}) - expected JSON`
+      );
+      error.status = r.status;
+      throw error;
     })
     .then(u => {
       // Persist auth details in sessionStorage so other pages can verify
@@ -174,7 +182,9 @@ function login() {
     })
     .catch(err => {
       console.error('Login request failed', err);
-      status.textContent = `Login failed: ${err.message || err}`;
+      // Surface HTTP status and message to the user for easier troubleshooting
+      const statusMsg = err.status ? ` (status ${err.status})` : '';
+      status.textContent = `Login failed${statusMsg}: ${err.message || err}`;
       status.classList.add('error');
     });
 }
