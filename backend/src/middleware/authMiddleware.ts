@@ -1,3 +1,11 @@
+/**
+ * @fileoverview Authentication helpers.
+ *
+ * This module defines middleware for validating JSON Web Tokens (JWT) on
+ * incoming requests and utilities for enforcing role-based access control.
+ * The JWT secret must be supplied via the `JWT_SECRET` environment variable;
+ * the application will refuse to start if it is missing.
+ */
 import { Request, Response, NextFunction } from 'express';
 import jwt from 'jsonwebtoken';
 import { Role } from '../models/user';
@@ -7,11 +15,14 @@ export interface AuthRequest extends Request {
   file?: Express.Multer.File; // populated by multer when handling uploads
 }
 
-const JWT_SECRET = process.env.JWT_SECRET || 'secret';
+const JWT_SECRET = process.env.JWT_SECRET as string;
+if (!JWT_SECRET) {
+  throw new Error('JWT_SECRET environment variable is required');
+}
 
 /**
- * Middleware that validates the JWT from the Authorization header. The decoded
- * user information is attached to `req.user` for later handlers to access.
+ * Validate the Authorization header's JWT. On success the decoded user
+ * information is attached to `req.user` for later handlers to access.
  */
 export function authMiddleware(req: AuthRequest, res: Response, next: NextFunction) {
   const header = req.header('Authorization');

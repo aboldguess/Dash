@@ -1,7 +1,17 @@
+/**
+ * @fileoverview Application entry point.
+ *
+ * Sets up the Express server, configures middleware and routes, and initializes
+ * Socket.IO for real-time features. Security is enhanced with Helmet, rate
+ * limiting, strict CORS controls, and authenticated serving of uploaded files.
+ */
 import express from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
+import helmet from 'helmet';
+import rateLimit from 'express-rate-limit';
 import path from 'path';
+import fs from 'fs';
 import http from 'http';
 import { Server } from 'socket.io';
 import net from 'net';
@@ -25,10 +35,14 @@ import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
 import { seedUsers } from './seedUsers';
 import { userConnected, userDisconnected } from './presence';
+import { authMiddleware } from './middleware/authMiddleware';
 
 export const app = express();
 // The initial port preference comes from the environment or defaults to 3000
 const DEFAULT_PORT = Number(process.env.PORT) || 3000;
+
+// Restrict cross-origin requests to the provided list of origins
+const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
 
 /**
  * Check if the provided port is currently in use.
@@ -61,9 +75,9 @@ async function findAvailablePort(startPort: number): Promise<number> {
 // Create the HTTP server separately so Socket.IO can share it
 const server = http.createServer(app);
 
-// Attach Socket.IO to the HTTP server with permissive CORS for demos
+// Attach Socket.IO to the HTTP server with restricted CORS
 const io = new Server(server, {
-  cors: { origin: '*' }
+  cors: { origin: allowedOrigins }
 });
 // Make the Socket.IO instance accessible to route handlers via app.get('io')
 app.set('io', io);
@@ -136,7 +150,20 @@ io.on('connection', socket => {
 });
 
 // Middleware configuration
-app.use(cors());
+app.use(helmet());
+const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
+app.use(limiter);
+app.use(
+  cors({
+    origin: (origin, callback) => {
+      if (!origin || allowedOrigins.includes(origin)) {
+        callback(null, true);
+      } else {
+        callback(new Error('Not allowed by CORS'));
+      }
+    }
+  })
+);
 app.use(bodyParser.json());
 
 // Route bindings for various features
@@ -154,9 +181,19 @@ app.use('/api/admin', adminRoutes);
 app.use('/api/profile', profileRoutes);
 app.use('/api/social', socialRoutes);
 
-// Expose uploaded profile photos as static files
+// Serve uploaded profile photos through an authenticated route to prevent
+// untrusted file access.
 const uploadsDir = path.resolve(__dirname, '..', '..', 'uploads');
-app.use('/uploads', express.static(uploadsDir));
+app.get('/uploads/:file', authMiddleware, (req, res) => {
+  const fileName = path.basename(req.params.file);
+  const filePath = path.join(uploadsDir, fileName);
+  fs.access(filePath, fs.constants.R_OK, err => {
+    if (err) {
+      return res.sendStatus(404);
+    }
+    res.sendFile(filePath);
+  });
+});
 
 // Serve static frontend files. The path is resolved relative to the compiled
 // JavaScript location so it works when running from the 'dist' directory.
@@ -188,8 +225,10 @@ if (require.main === module) {
       // Start the combined HTTP/WebSocket server once the DB is ready
       server.listen(port, async () => {
         console.log(`Server listening on port ${port}`);
-        // Open the frontend in the user's default browser
-        await open(`http://localhost:${port}`);
+        // Open the frontend in the user's default browser unless disabled
+        if (process.env.AUTO_OPEN !== 'false') {
+          await open(`http://localhost:${port}`);
+        }
       });
     })
     .catch(err => {

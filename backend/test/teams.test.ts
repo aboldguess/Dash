@@ -1,3 +1,6 @@
+/**
+ * @fileoverview Tests for team management endpoints.
+ */
 import request from 'supertest';
 import { MongoMemoryServer } from 'mongodb-memory-server';
 import mongoose from 'mongoose';
@@ -5,6 +8,7 @@ import bcrypt from 'bcrypt';
 import jwt from 'jsonwebtoken';
 // Increase test timeout for DB initialisation
 jest.setTimeout(20000);
+process.env.JWT_SECRET = 'testsecret';
 import { app } from '../src/index';
 import { connectDB } from '../src/db';
 import { Team } from '../src/models/team';
@@ -15,6 +19,7 @@ let adminToken: string;
 let adminTeam: string;
 
 beforeAll(async () => {
+  process.env.JWT_SECRET = 'testsecret';
   mongo = await MongoMemoryServer.create();
   process.env.DB_URI = mongo.getUri();
   await connectDB();
@@ -28,7 +33,7 @@ beforeAll(async () => {
   await admin.save();
   adminToken = jwt.sign(
     { id: admin.id, username: admin.username, role: admin.role, team: team.id },
-    'secret',
+    process.env.JWT_SECRET!,
     { expiresIn: '1h' }
   );
 });
