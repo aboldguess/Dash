@@ -80,7 +80,6 @@ router.post(
       });
     } catch (err) {
       console.error('Login error:', err);
-      res.status(500).json({ message: 'Server error' });
       next(err);
     }
   }
@@ -93,84 +92,89 @@ router.post(
   '/signup',
   body('username').isString().trim().notEmpty(),
   body('password').isString().trim().isLength({ min: 8 }),
-  async (req, res) => {
-    const errors = validationResult(req);
-    if (!errors.isEmpty()) {
-      return res.status(400).json({ errors: errors.array() });
-    }
-
-    // In addition to standard credentials the client may request creation of a
-    // new team. `seats` specifies how many licenses to purchase and `plan`
-    // represents the pricing tier (unused by the dummy payment handler).
-    const { username, password, teamId, token, teamName, seats = 5, plan = 'basic' } = req.body;
-
-    // Fail if the username already exists
-    if (await User.exists({ username })) {
-      return res.status(400).json({ message: 'Username already taken' });
-    }
-
-    // Hash the password before storing in the database
-    const hashed = await bcrypt.hash(password, 10);
-    // Convert the requested seat count to a number, falling back to 5 which
-    // matches the default free tier used in demos.
-    const seatCount = parseInt(seats, 10) || 5;
-
-    let team;
-    // Use invitation token if provided
-    if (token) {
-      const invite = await TeamInvitation.findOne({ token, email: username }).exec();
-      if (!invite) {
-        return res.status(400).json({ message: 'Invalid invitation token' });
+  async (req, res, next) => {
+    try {
+      const errors = validationResult(req);
+      if (!errors.isEmpty()) {
+        return res.status(400).json({ errors: errors.array() });
       }
-      team = await Team.findById(invite.team).exec();
+
+      // In addition to standard credentials the client may request creation of a
+      // new team. `seats` specifies how many licenses to purchase and `plan`
+      // represents the pricing tier (unused by the dummy payment handler).
+      const { username, password, teamId, token, teamName, seats = 5, plan = 'basic' } = req.body;
+
+      // Fail if the username already exists
+      if (await User.exists({ username })) {
+        return res.status(400).json({ message: 'Username already taken' });
+      }
+
+      // Hash the password before storing in the database
+      const hashed = await bcrypt.hash(password, 10);
+      // Convert the requested seat count to a number, falling back to 5 which
+      // matches the default free tier used in demos.
+      const seatCount = parseInt(seats, 10) || 5;
+
+      let team;
+      // Use invitation token if provided
+      if (token) {
+        const invite = await TeamInvitation.findOne({ token, email: username }).exec();
+        if (!invite) {
+          return res.status(400).json({ message: 'Invalid invitation token' });
+        }
+        team = await Team.findById(invite.team).exec();
+        if (!team) {
+          return res.status(400).json({ message: 'Invitation team missing' });
+        }
+        // consume invitation
+        await invite.deleteOne();
+      } else if (teamId) {
+        // Directly specify a team by id
+        team = await Team.findById(teamId).exec();
+      } else if (teamName) {
+        // Creating a brand new team requires payment processing. This dummy
+        // implementation simply waits then logs the transaction. Replace
+        // `processPayment` with a real gateway later.
+        await processPayment(username, plan, seatCount);
+
+        // Create the team with the requested number of seats. Domain mapping
+        // can be added during onboarding but is omitted here for brevity.
+        team = new Team({ name: teamName, domains: [], seats: seatCount });
+        await team.save();
+      } else {
+        // Fallback to domain based matching
+        const parts = username.split('@');
+        if (parts.length === 2) {
+          team = await Team.findOne({ domains: parts[1] }).exec();
+        }
+      }
+
       if (!team) {
-        return res.status(400).json({ message: 'Invitation team missing' });
+        return res.status(400).json({ message: 'Unable to determine team for user' });
       }
-      // consume invitation
-      await invite.deleteOne();
-    } else if (teamId) {
-      // Directly specify a team by id
-      team = await Team.findById(teamId).exec();
-    } else if (teamName) {
-      // Creating a brand new team requires payment processing. This dummy
-      // implementation simply waits then logs the transaction. Replace
-      // `processPayment` with a real gateway later.
-      await processPayment(username, plan, seatCount);
 
-      // Create the team with the requested number of seats. Domain mapping
-      // can be added during onboarding but is omitted here for brevity.
-      team = new Team({ name: teamName, domains: [], seats: seatCount });
-      await team.save();
-    } else {
-      // Fallback to domain based matching
-      const parts = username.split('@');
-      if (parts.length === 2) {
-        team = await Team.findOne({ domains: parts[1] }).exec();
+      // Enforce license seat limits to prevent exceeding paid capacity
+      const memberCount = await User.countDocuments({ team: team._id });
+      if (memberCount >= team.seats) {
+        return res.status(400).json({ message: 'No available seats for this team' });
       }
+
+      const newUser = new User({
+        username,
+        password: hashed,
+        role: 'user',
+        team: team._id,
+        allowedContacts: [],
+        following: [],
+        followers: []
+      });
+      await newUser.save();
+
+      res.json({ id: newUser._id, username: newUser.username, role: newUser.role, team: team.name });
+    } catch (err) {
+      console.error('Signup error:', err);
+      next(err);
     }
-
-    if (!team) {
-      return res.status(400).json({ message: 'Unable to determine team for user' });
-    }
-
-    // Enforce license seat limits to prevent exceeding paid capacity
-    const memberCount = await User.countDocuments({ team: team._id });
-    if (memberCount >= team.seats) {
-      return res.status(400).json({ message: 'No available seats for this team' });
-    }
-
-    const newUser = new User({
-      username,
-      password: hashed,
-      role: 'user',
-      team: team._id,
-      allowedContacts: [],
-      following: [],
-      followers: []
-    });
-    await newUser.save();
-
-    res.json({ id: newUser._id, username: newUser.username, role: newUser.role, team: team.name });
   }
 );
 
