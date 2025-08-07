@@ -23,7 +23,9 @@
   <!-- Signup form -->
   <section class="hero">
     <h1>Create Account</h1>
-    <form class="card" onsubmit="signup(); return false;">
+    <!-- Signup uses JS event listeners so inline handlers are unnecessary
+         and the strict Content Security Policy remains intact. -->
+    <form id="signupForm" class="card">
       <input id="signupUsername" placeholder="Username" />
       <input id="signupPassword" placeholder="Password" type="password" />
       <input id="signupTeamName" placeholder="Team name (new teams)" />
