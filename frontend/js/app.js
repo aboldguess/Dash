@@ -1,9 +1,18 @@
-// Base URL for API requests. By default the frontend assumes the backend
-// is reachable from the same host/port it was served from. Using
-// `window.location.origin` ensures requests are made to whichever server
-// delivered the page, allowing the UI to work when accessed remotely.
-// If your backend runs on a different host or port, replace this value
-// with the appropriate URL (e.g. 'http://192.168.1.5:3000').
+/**
+ * Dash client logic
+ * ------------------
+ * Handles login, real-time messaging and business tool helpers for the
+ * dashboard pages. Structured as a collection of small functions grouped by
+ * feature area (authentication, messaging, CRM, projects, etc.).
+ *
+ * Security notes:
+ *  - Authentication tokens are kept in sessionStorage to avoid long-term
+ *    persistence in the browser.
+ *  - DOM insertion uses element.textContent where possible to limit XSS risk.
+ *
+ * The base URL assumes the backend is served from the same origin as the
+ * frontend. Replace API_BASE_URL if your backend is on a different host.
+ */
 const API_BASE_URL = window.location.origin;
 
 // Promise used to ensure the Socket.IO client library is loaded before
@@ -42,6 +51,13 @@ let selectedUser = null; // username of direct message recipient
 // Track unread direct messages for each user so their names can be bolded
 let unreadCounts = {};
 let activeTool = 'messages'; // currently selected tool
+
+/** Escape HTML special characters to mitigate XSS when using innerHTML. */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
 
 /** Toggle the visibility of the profile dropdown menu. */
 function toggleProfileMenu() {
@@ -122,13 +138,14 @@ function login() {
   })
     .then(r => r.ok ? r.json() : Promise.reject('Login failed'))
     .then(u => {
-      // Persist auth details so other pages can verify login state
-      localStorage.setItem('token', u.token);
-      localStorage.setItem('username', u.username);
+      // Persist auth details in sessionStorage so other pages can verify
+      // login state without leaving tokens sitting in long-term storage.
+      sessionStorage.setItem('token', u.token);
+      sessionStorage.setItem('username', u.username);
       // Remember the role so pages can conditionally display admin features
-      localStorage.setItem('role', u.role);
+      sessionStorage.setItem('role', u.role);
       // Store calculated gravatar URL so it can be reused on the dashboard
-      localStorage.setItem('avatarUrl', getGravatarUrl(u.username));
+      sessionStorage.setItem('avatarUrl', getGravatarUrl(u.username));
 
       // Redirect straight to the dashboard where the websocket
       // connection will be established.
@@ -271,12 +288,15 @@ function loadMessages() {
 }
 
 // Helper to add a single message element to the chat log
-function appendMessage(m) {
-  const list = document.getElementById('messageList');
-  const div = document.createElement('div');
-  div.innerHTML = `<strong>${m.user}:</strong> ${m.text}`;
-  list.appendChild(div);
-}
+  function appendMessage(m) {
+    const list = document.getElementById('messageList');
+    const div = document.createElement('div');
+    const strong = document.createElement('strong');
+    strong.textContent = `${m.user}:`;
+    div.appendChild(strong);
+    div.appendChild(document.createTextNode(' ' + m.text));
+    list.appendChild(div);
+  }
 
 // Render a direct message including timestamp and avatars
 function formatRelativeTime(dateStr) {
@@ -297,20 +317,35 @@ function formatRelativeTime(dateStr) {
 }
 
 function appendDirectMessage(m) {
-  const list = document.getElementById('messageList');
-  const div = document.createElement('div');
-  // Convert message timestamp to a relative description like "5 minutes ago"
-  const time = formatRelativeTime(m.createdAt);
-  div.className = 'message';
+    const list = document.getElementById('messageList');
+    const div = document.createElement('div');
+    // Convert message timestamp to a relative description like "5 minutes ago"
+    const time = formatRelativeTime(m.createdAt);
+    div.className = 'message';
 
-  // Render sender avatar, name and message text. Read receipts are omitted.
-  div.innerHTML = `
-    <img class="avatar" src="${getGravatarUrl(m.from)}" alt="avatar">
-    <span class="user">${m.from}:</span>
-    <span class="text">${m.text}</span>
-    <span class="time">${time}</span>`;
-  list.appendChild(div);
-}
+    const img = document.createElement('img');
+    img.className = 'avatar';
+    img.src = getGravatarUrl(m.from);
+    img.alt = 'avatar';
+    div.appendChild(img);
+
+    const userSpan = document.createElement('span');
+    userSpan.className = 'user';
+    userSpan.textContent = `${m.from}:`;
+    div.appendChild(userSpan);
+
+    const textSpan = document.createElement('span');
+    textSpan.className = 'text';
+    textSpan.textContent = m.text;
+    div.appendChild(textSpan);
+
+    const timeSpan = document.createElement('span');
+    timeSpan.className = 'time';
+    timeSpan.textContent = time;
+    div.appendChild(timeSpan);
+
+    list.appendChild(div);
+  }
 
 // Fetch list of all users for the sidebar
 function loadUsers() {
@@ -321,17 +356,20 @@ function loadUsers() {
     .then(users => {
       const list = document.getElementById('userList');
       list.innerHTML = '';
-      users.forEach(u => {
-        if (u.username === currentUser.username) return; // skip self
-        const li = document.createElement('li');
-        li.dataset.user = u.username;
-        li.className = u.online ? 'user-online' : 'user-offline';
-        // Each user entry consists of an online indicator and the username.
-        // Unread message counts will be shown by bolding the name instead of badges.
-        li.innerHTML = `<span class="online-indicator"></span>${u.username}`;
-        li.onclick = () => selectUser(u.username);
-        list.appendChild(li);
-      });
+        users.forEach(u => {
+          if (u.username === currentUser.username) return; // skip self
+          const li = document.createElement('li');
+          li.dataset.user = u.username;
+          li.className = u.online ? 'user-online' : 'user-offline';
+
+          const indicator = document.createElement('span');
+          indicator.className = 'online-indicator';
+          li.appendChild(indicator);
+          li.appendChild(document.createTextNode(u.username));
+
+          li.onclick = () => selectUser(u.username);
+          list.appendChild(li);
+        });
       // After rendering users, load unread counts to bold names with unread messages
       loadUnreadCounts();
     });
@@ -405,16 +443,16 @@ function selectUser(name) {
 
 // Verify the user is logged in before showing the dashboard
 function checkAuth() {
-  const token = localStorage.getItem('token');
-  const username = localStorage.getItem('username');
-  const role = localStorage.getItem('role');
+  const token = sessionStorage.getItem('token');
+  const username = sessionStorage.getItem('username');
+  const role = sessionStorage.getItem('role');
   if (!token || !username) {
     // Not authenticated - return to login page
     window.location.href = 'login.html';
     return;
   }
 
-  const avatarUrl = localStorage.getItem('avatarUrl') || getGravatarUrl(username);
+  const avatarUrl = sessionStorage.getItem('avatarUrl') || getGravatarUrl(username);
   // Store all relevant details for convenience in other functions
   currentUser = { username, token, avatarUrl, role };
 
@@ -467,10 +505,10 @@ function checkAuth() {
 
 // Clear stored credentials and return to login page
 function logout() {
-  localStorage.removeItem('token');
-  localStorage.removeItem('username');
-  localStorage.removeItem('avatarUrl');
-  localStorage.removeItem('role');
+  sessionStorage.removeItem('token');
+  sessionStorage.removeItem('username');
+  sessionStorage.removeItem('avatarUrl');
+  sessionStorage.removeItem('role');
   if (socket) {
     socket.disconnect();
   }
@@ -513,11 +551,11 @@ function addContactRow(c) {
   const table = document.getElementById('contactTable');
   const row = document.createElement('tr');
   row.innerHTML = `
-    <td>${c.name}</td>
-    <td>${c.email}</td>
-    <td>${c.phone}</td>
-    <td>${c.company || ''}</td>
-    <td>${c.notes || ''}</td>
+    <td>${escapeHtml(c.name)}</td>
+    <td>${escapeHtml(c.email)}</td>
+    <td>${escapeHtml(c.phone)}</td>
+    <td>${escapeHtml(c.company || '')}</td>
+    <td>${escapeHtml(c.notes || '')}</td>
     <td>
       <button onclick="editContact('${c._id}')">Edit</button>
       <button onclick="deleteContact('${c._id}')">Delete</button>
@@ -625,9 +663,9 @@ function loadProjects() {
       list.forEach(p => {
         const row = document.createElement('tr');
         row.innerHTML = `
-          <td>${p.name}</td>
-          <td>${p.owner}</td>
-          <td>${p.status}</td>
+          <td>${escapeHtml(p.name)}</td>
+          <td>${escapeHtml(p.owner)}</td>
+          <td>${escapeHtml(p.status)}</td>
           <td><button onclick="editProject('${p._id}')">Edit</button></td>`;
         table.appendChild(row);
         // Collect tasks for gantt chart
@@ -730,7 +768,7 @@ function loadWorkPackages(projectId) {
       table.appendChild(header);
       list.forEach(wp => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${wp.name}</td><td>${wp.owner || ''}</td><td><button onclick="editWorkPackage('${projectId}','${wp._id}')">Edit</button></td>`;
+        row.innerHTML = `<td>${escapeHtml(wp.name)}</td><td>${escapeHtml(wp.owner || '')}</td><td><button onclick="editWorkPackage('${projectId}','${wp._id}')">Edit</button></td>`;
         table.appendChild(row);
       });
     });
@@ -798,7 +836,7 @@ function loadTasks(projectId, wpId) {
       table.appendChild(header);
       wp.tasks.forEach(t => {
         const row = document.createElement('tr');
-        row.innerHTML = `<td>${t.name}</td><td>${t.owner || ''}</td><td><button onclick="editTask('${projectId}','${wpId}','${t._id}')">Edit</button></td>`;
+        row.innerHTML = `<td>${escapeHtml(t.name)}</td><td>${escapeHtml(t.owner || '')}</td><td><button onclick="editTask('${projectId}','${wpId}','${t._id}')">Edit</button></td>`;
         table.appendChild(row);
       });
     });

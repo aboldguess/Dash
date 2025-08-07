@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!--
+    Mini readme: Profile page
+    Displays and edits personal profile information. Loads required assets from
+    local files only and applies a strict Content Security Policy.
+  -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws:;">
   <title>My Details - Dash</title>
   <link rel="stylesheet" href="css/style.css">
 </head>

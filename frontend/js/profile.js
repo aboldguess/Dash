@@ -1,8 +1,13 @@
-// Minimal helpers for the profile page
+/**
+ * Profile page helpers
+ * --------------------
+ * Loads and saves the current user's profile details. Tokens are read from
+ * sessionStorage for shorter-lived exposure in the browser.
+ */
 const API_BASE_URL = window.location.origin;
 
 function loadProfile() {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   if (!token) {
     window.location.href = 'login.html';
     return;
@@ -25,7 +30,7 @@ function loadProfile() {
 
 function saveProfile(e) {
   e.preventDefault();
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   fetch(`${API_BASE_URL}/api/profile/me`, {
     method: 'POST',
     headers: {
@@ -41,7 +46,7 @@ function saveProfile(e) {
 }
 
 function uploadPhoto() {
-  const token = localStorage.getItem('token');
+  const token = sessionStorage.getItem('token');
   const file = document.getElementById('profilePhoto').files[0];
   if (!file) return;
   const form = new FormData();
