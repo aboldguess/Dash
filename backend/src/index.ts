@@ -3,8 +3,10 @@
  *
  * Sets up the Express server, configures middleware and routes, and initializes
  * Socket.IO for real-time features. Security is enhanced with Helmet, rate
- * limiting, strict CORS controls, and authenticated serving of uploaded files.
- */
+ * limiting, and CORS controls driven by the `CORS_ORIGIN` environment variable
+ * (falling back to an open policy for development), plus authenticated serving
+ * of uploaded files.
+*/
 import express from 'express';
 import type { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
@@ -44,6 +46,13 @@ const DEFAULT_PORT = Number(process.env.PORT) || 3000;
 
 // Restrict cross-origin requests to the provided list of origins
 const allowedOrigins = process.env.CORS_ORIGIN ? process.env.CORS_ORIGIN.split(',') : [];
+
+// Log the CORS policy for transparency during development
+if (allowedOrigins.length > 0) {
+  console.log(`CORS enabled for: ${allowedOrigins.join(', ')}`);
+} else {
+  console.log('CORS_ORIGIN not set; allowing requests from any origin');
+}
 
 /**
  * Check if the provided port is currently in use.
@@ -157,7 +166,11 @@ app.use(limiter);
 app.use(
   cors({
     origin: (origin, callback) => {
-      if (!origin || allowedOrigins.includes(origin)) {
+      if (
+        !origin ||
+        allowedOrigins.length === 0 ||
+        allowedOrigins.includes(origin)
+      ) {
         callback(null, true);
       } else {
         callback(new Error('Not allowed by CORS'));
