@@ -200,6 +200,27 @@ function signup() {
     });
 }
 
+// Attach event listeners for authentication forms after the DOM loads. Using
+// JavaScript listeners keeps inline script out of the HTML, satisfying the
+// strict Content Security Policy while still providing graceful form handling.
+document.addEventListener('DOMContentLoaded', () => {
+  const loginForm = document.getElementById('loginForm');
+  if (loginForm) {
+    loginForm.addEventListener('submit', evt => {
+      evt.preventDefault();
+      login();
+    });
+  }
+
+  const signupForm = document.getElementById('signupForm');
+  if (signupForm) {
+    signupForm.addEventListener('submit', evt => {
+      evt.preventDefault();
+      signup();
+    });
+  }
+});
+
 function sendMessage() {
   const text = document.getElementById('messageInput').value;
 

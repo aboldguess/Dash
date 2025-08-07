@@ -24,7 +24,9 @@
   <!-- Login form -->
   <section class="hero">
     <h1>Login</h1>
-    <form class="card" onsubmit="login(); return false;">
+    <!-- The login form is handled entirely via JavaScript to comply with the
+         Content Security Policy which disallows inline event handlers. -->
+    <form id="loginForm" class="card">
       <input id="username" placeholder="Username" />
       <input id="password" placeholder="Password" type="password" />
       <button type="submit">Login</button>
