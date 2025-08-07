@@ -318,6 +318,11 @@ button:hover {
   color: var(--color-muted);
 }
 
+/* Ensure errors are clearly visible to users */
+.error {
+  color: #dc2626; /* red */
+}
+
 /* Simple card container used to keep forms visually consistent */
 .card {
   background: var(--color-light);
