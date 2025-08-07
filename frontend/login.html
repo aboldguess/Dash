@@ -1,8 +1,15 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!--
+    Mini readme: Login page
+    Provides a simple form for existing users to authenticate. CSS and JS are
+    loaded from local files. A strict Content Security Policy is applied to
+    mitigate XSS.
+  -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws:;">
   <title>Login - Dash</title>
   <link rel="stylesheet" href="css/style.css">
 </head>

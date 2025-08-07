@@ -1,8 +1,14 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
+  <!--
+    Mini readme: Signup page
+    Allows new users or teams to register. Applies a strict Content Security
+    Policy and loads assets from the local application only.
+  -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws:;">
   <title>Sign Up - Dash</title>
   <link rel="stylesheet" href="css/style.css">
 </head>

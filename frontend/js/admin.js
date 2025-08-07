@@ -1,11 +1,24 @@
 /**
- * Enhanced admin dashboard logic. Builds on the shared helpers in app.js to
- * allow admins to manage configuration values, teams and users directly from
- * the browser. Each section of admin.html is populated via the functions below.
+ * Admin dashboard helpers
+ * -----------------------
+ * Provides UI logic for managing configuration, teams and users. The file is
+ * structured into small functions grouped by feature area so it can be easily
+ * navigated. Authentication and base API configuration are shared via app.js.
+ *
+ * Security notes:
+ *  - escapeHtml() is used to sanitize any user supplied content before it is
+ *    inserted into the DOM, protecting against XSS.
  */
 
 // Cached list of teams so multiple panels can reference the same data
 let teamsCache = [];
+
+/** Escape HTML special characters to mitigate XSS when using innerHTML. */
+function escapeHtml(str) {
+  const div = document.createElement('div');
+  div.textContent = String(str);
+  return div.innerHTML;
+}
 
 function initAdmin() {
   // Verify the user is logged in and has the correct role
@@ -99,9 +112,9 @@ function renderTeamTable() {
   teamsCache.forEach(t => {
     const row = document.createElement('tr');
     row.innerHTML = `
-      <td>${t.name}</td>
-      <td>${t.domains.join(', ')}</td>
-      <td>${t.seats}</td>
+      <td>${escapeHtml(t.name)}</td>
+      <td>${t.domains.map(escapeHtml).join(', ')}</td>
+      <td>${escapeHtml(t.seats)}</td>
       <td><button onclick="showTeamDetails('${t._id}')">Manage</button></td>`;
     table.appendChild(row);
   });
@@ -143,11 +156,11 @@ function showTeamDetails(id) {
       const container = document.getElementById('teamDetails');
       container.classList.remove('hidden');
       container.innerHTML = `
-        <h3>${team.name}</h3>
-        <label>Seats <input id="editSeats" type="number" value="${team.seats}"></label>
+        <h3>${escapeHtml(team.name)}</h3>
+        <label>Seats <input id="editSeats" type="number" value="${escapeHtml(team.seats)}"></label>
         <button onclick="saveTeam('${id}')">Save</button>
         <h4>Members</h4>
-        <ul>${members.map(m => `<li>${m.username} (${m.role})</li>`).join('')}</ul>`;
+        <ul>${members.map(m => `<li>${escapeHtml(m.username)} (${escapeHtml(m.role)})</li>`).join('')}</ul>`;
     });
 }
 
@@ -194,8 +207,8 @@ function loadAllUsers() {
   Promise.all(promises).then(all => {
     all.forEach(entry => {
       const div = document.createElement('div');
-      div.innerHTML = `<h3>${entry.team}</h3><ul>${entry.members
-        .map(m => `<li>${m.username} (${m.role})</li>`)
+      div.innerHTML = `<h3>${escapeHtml(entry.team)}</h3><ul>${entry.members
+        .map(m => `<li>${escapeHtml(m.username)} (${escapeHtml(m.role)})</li>`)
         .join('')}</ul>`;
       list.appendChild(div);
     });
