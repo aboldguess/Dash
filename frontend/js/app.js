@@ -134,6 +134,10 @@ function selectTool(tool) {
 function login() {
   const username = document.getElementById('username').value;
   const password = document.getElementById('password').value;
+  const status = document.getElementById('loginStatus');
+  // Reset status text and styling on each attempt
+  status.textContent = '';
+  status.classList.remove('error');
 
   // Use the API base URL for all requests so the frontend works even
   // when served on a different port from the backend.
@@ -143,9 +147,17 @@ function login() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password })
   })
-    .then(r =>
-      r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Login failed'))
-    )
+    .then(async r => {
+      const text = await r.text();
+      const contentType = r.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = JSON.parse(text);
+        if (r.ok) return data;
+        throw new Error(data.message || 'Login failed');
+      }
+      console.error('Unexpected response format', text);
+      throw new Error('Unexpected response from server');
+    })
     .then(u => {
       // Persist auth details in sessionStorage so other pages can verify
       // login state without leaving tokens sitting in long-term storage.
@@ -162,7 +174,8 @@ function login() {
     })
     .catch(err => {
       console.error('Login request failed', err);
-      document.getElementById('loginStatus').textContent = `Login failed: ${err}`;
+      status.textContent = `Login failed: ${err.message || err}`;
+      status.classList.add('error');
     });
 }
 
@@ -174,6 +187,9 @@ function signup() {
   // Number of seats/licenses for the new team. Defaults to 1 if not provided.
   const seats = parseInt(document.getElementById('signupSeats').value, 10) || 1;
   const token = document.getElementById('signupToken').value;
+  const status = document.getElementById('signupStatus');
+  status.textContent = '';
+  status.classList.remove('error');
 
   // Send the collected details to the signup endpoint. When a team name is
   // supplied the backend will create the team and process a dummy payment
@@ -184,19 +200,28 @@ function signup() {
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ username, password, teamName, token, seats })
   })
-    .then(r =>
-      r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Signup failed'))
-    )
+    .then(async r => {
+      const text = await r.text();
+      const contentType = r.headers.get('content-type') || '';
+      if (contentType.includes('application/json')) {
+        const data = JSON.parse(text);
+        if (r.ok) return data;
+        throw new Error(data.message || 'Signup failed');
+      }
+      console.error('Unexpected response format', text);
+      throw new Error('Unexpected response from server');
+    })
     .then(u => {
       // Inform the user and send them to the login page
-      document.getElementById('signupStatus').textContent = `Account ${u.username} created`;
+      status.textContent = `Account ${u.username} created`;
       setTimeout(() => {
         window.location.href = 'login.html';
       }, 1000);
     })
     .catch(err => {
       console.error('Signup request failed', err);
-      document.getElementById('signupStatus').textContent = `Signup failed: ${err}`;
+      status.textContent = `Signup failed: ${err.message || err}`;
+      status.classList.add('error');
     });
 }
 
