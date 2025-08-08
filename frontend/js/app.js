@@ -254,6 +254,74 @@ document.addEventListener('DOMContentLoaded', () => {
       signup();
     });
   }
+
+  // Dashboard-specific initialisation. All listeners are attached here to
+  // satisfy the strict CSP which forbids inline event handlers.
+  if (document.getElementById('tool-messages')) {
+    // Authenticate the user and establish the WebSocket connection.
+    checkAuth();
+
+    const avatar = document.getElementById('navAvatar');
+    if (avatar) {
+      avatar.addEventListener('click', toggleProfileMenu);
+    }
+
+    const logoutLink = document.getElementById('logoutLink');
+    if (logoutLink) {
+      logoutLink.addEventListener('click', e => {
+        e.preventDefault();
+        logout();
+      });
+    }
+
+    document.querySelectorAll('.tool-sidebar li').forEach(li => {
+      li.addEventListener('click', () => {
+        const tool = li.id.replace('tool-', '');
+        selectTool(tool);
+      });
+    });
+
+    const sendBtn = document.getElementById('sendButton');
+    if (sendBtn) sendBtn.addEventListener('click', sendMessage);
+
+    const channelSelect = document.getElementById('channelSelect');
+    if (channelSelect) channelSelect.addEventListener('change', changeChannel);
+
+    const contactForm = document.getElementById('contactForm');
+    if (contactForm)
+      contactForm.addEventListener('submit', e => {
+        e.preventDefault();
+        saveContact(e);
+      });
+
+    const projectForm = document.getElementById('projectForm');
+    if (projectForm)
+      projectForm.addEventListener('submit', e => {
+        e.preventDefault();
+        saveProject(e);
+      });
+
+    const workPackageForm = document.getElementById('workPackageForm');
+    if (workPackageForm)
+      workPackageForm.addEventListener('submit', e => {
+        e.preventDefault();
+        saveWorkPackage(e);
+      });
+
+    const taskForm = document.getElementById('taskForm');
+    if (taskForm)
+      taskForm.addEventListener('submit', e => {
+        e.preventDefault();
+        saveTask(e);
+      });
+
+    const postForm = document.getElementById('postForm');
+    if (postForm)
+      postForm.addEventListener('submit', e => {
+        e.preventDefault();
+        savePost(e);
+      });
+  }
 });
 
 function sendMessage() {
