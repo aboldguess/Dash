@@ -4,7 +4,8 @@
   <!--
     Mini readme: User dashboard
     Main authenticated area including messaging and business tools. Applies a
-    strict Content Security Policy and loads scripts/styles locally.
+    strict Content Security Policy and loads scripts/styles locally. All
+    interactions are wired up in app.js to avoid inline scripts.
   -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -12,20 +13,20 @@
   <title>Dashboard - Dash</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body onload="checkAuth()">
+<body>
   <header>
     <nav>
       <a href="dashboard.html"><strong>Dash</strong></a>
       <!-- Profile menu with navigation options -->
       <div class="profile">
-        <img id="navAvatar" class="avatar profile-button" alt="Profile menu" onclick="toggleProfileMenu()" />
+        <img id="navAvatar" class="avatar profile-button" alt="Profile menu" />
         <ul id="profileMenu" class="profile-menu hidden">
           <li><a href="manage-profiles.html">Manage Profiles</a></li>
           <li><a href="learning-zone.html">Learning Zone</a></li>
           <li><a href="profile.html">My Details</a></li>
           <li><a href="subscription.html">Subscription Details</a></li>
           <li id="manageUsersLink" class="hidden"><a href="admin.html">Manage Users</a></li>
-          <li><a href="#" onclick="logout()">Sign out</a></li>
+          <li><a href="#" id="logoutLink">Sign out</a></li>
         </ul>
       </div>
     </nav>
@@ -36,12 +37,12 @@
     <!-- Left sidebar for selecting the active business tool -->
     <nav class="tool-sidebar">
       <ul>
-        <li id="tool-messages" class="active" onclick="selectTool('messages')">💬</li>
-        <li id="tool-crm" onclick="selectTool('crm')">CRM</li>
-        <li id="tool-projects" onclick="selectTool('projects')">Projects</li>
-        <li id="tool-timesheets" onclick="selectTool('timesheets')">TS</li>
-        <li id="tool-recruit" onclick="selectTool('recruit')">HR</li>
-        <li id="tool-social" onclick="selectTool('social')">Social</li>
+        <li id="tool-messages" class="active">💬</li>
+        <li id="tool-crm">CRM</li>
+        <li id="tool-projects">Projects</li>
+        <li id="tool-timesheets">TS</li>
+        <li id="tool-recruit">HR</li>
+        <li id="tool-social">Social</li>
       </ul>
     </nav>
 
@@ -56,16 +57,16 @@
       <section id="messages">
         <h2>Instant Messages</h2>
         <label for="channelSelect">Channel:</label>
-        <select id="channelSelect" onchange="changeChannel()"></select>
+        <select id="channelSelect"></select>
         <div id="messageList"></div>
         <input id="messageInput" placeholder="Message" />
-        <button onclick="sendMessage()">Send</button>
+        <button id="sendButton">Send</button>
       </section>
 
       <!-- Placeholder sections for future tools -->
       <section id="crm" class="hidden">
         <h2>CRM</h2>
-        <form id="contactForm" class="card" onsubmit="saveContact(event)">
+        <form id="contactForm" class="card">
           <input id="contactId" type="hidden" />
           <input id="contactName" placeholder="Name" required />
           <input id="contactEmail" placeholder="Email" required />
@@ -79,7 +80,7 @@
       </section>
       <section id="projects" class="hidden">
         <h2>Projects</h2>
-        <form id="projectForm" class="card" onsubmit="saveProject(event)">
+        <form id="projectForm" class="card">
           <input id="projectId" type="hidden" />
           <input id="projectName" placeholder="Project name" required />
           <input id="projectOwner" placeholder="Owner" required />
@@ -93,7 +94,7 @@
 
         <div id="workPackageSection" class="hidden">
           <h3>Work Packages</h3>
-          <form id="workPackageForm" class="card" onsubmit="saveWorkPackage(event)">
+          <form id="workPackageForm" class="card">
             <input id="wpProject" type="hidden" />
             <input id="wpId" type="hidden" />
             <input id="wpName" placeholder="Work package name" required />
@@ -107,7 +108,7 @@
           <table class="admin-table" id="workPackageTable"></table>
 
           <h4>Tasks</h4>
-          <form id="taskForm" class="card" onsubmit="saveTask(event)">
+          <form id="taskForm" class="card">
             <input id="taskProject" type="hidden" />
             <input id="taskWp" type="hidden" />
             <input id="taskId" type="hidden" />
@@ -134,7 +135,7 @@
       </section>
       <section id="social" class="hidden">
         <h2>Social</h2>
-        <form id="postForm" class="card" onsubmit="savePost(event)">
+        <form id="postForm" class="card">
           <textarea id="postText" placeholder="Share an update" required></textarea>
           <button type="submit">Post</button>
         </form>
