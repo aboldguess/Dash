@@ -4,7 +4,8 @@
  * Loads and saves the current user's profile details. Tokens are read from
  * sessionStorage for shorter-lived exposure in the browser. Profile photos are
  * retrieved via an authenticated request so they can be stored behind a
- * protected route on the server.
+ * protected route on the server. Photo uploads provide immediate on-screen
+ * status updates to keep the user informed.
 */
 const API_BASE_URL = window.location.origin;
 
@@ -70,19 +71,47 @@ function saveProfile(e) {
 }
 
 function uploadPhoto() {
+  // Provide immediate visual feedback and debug logging when uploading.
+  const statusEl = document.getElementById('photoUploadStatus');
+  const uploadBtn = document.getElementById('uploadPhotoBtn');
+  const fileInput = document.getElementById('profilePhoto');
   const token = sessionStorage.getItem('token');
-  const file = document.getElementById('profilePhoto').files[0];
-  if (!file) return;
-    const form = new FormData();
-    form.append('photo', file);
-    form.append('visibility', document.querySelector('input[name="photoVisibility"]:checked').value);
+
+  const file = fileInput.files[0];
+  if (!file) {
+    if (statusEl) statusEl.textContent = 'Please choose an image first.';
+    return;
+  }
+
+  const form = new FormData();
+  form.append('photo', file);
+  form.append('visibility', document.querySelector('input[name="photoVisibility"]:checked').value);
+
+  if (statusEl) statusEl.textContent = 'Uploading photo...';
+  if (uploadBtn) uploadBtn.disabled = true;
+  console.log('Uploading profile photo');
+
   fetch(`${API_BASE_URL}/api/profile/me/photo`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form
   })
-    .then(loadProfile)
-    .catch(err => console.error('Failed to upload photo', err));
+    .then(r => {
+      if (!r.ok) throw new Error('Upload failed');
+      console.log('Photo upload complete');
+      if (statusEl) statusEl.textContent = 'Upload complete';
+      loadProfile();
+    })
+    .catch(err => {
+      console.error('Failed to upload photo', err);
+      if (statusEl) statusEl.textContent = 'Upload failed';
+    })
+    .finally(() => {
+      if (uploadBtn) uploadBtn.disabled = false;
+      if (fileInput) fileInput.value = '';
+      // Clear status message after a short delay for better UX
+      if (statusEl) setTimeout(() => (statusEl.textContent = ''), 3000);
+    });
 }
 
 // Initialise profile page once DOM is ready

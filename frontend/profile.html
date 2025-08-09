@@ -3,8 +3,9 @@
 <head>
   <!--
     Mini readme: Profile page
-    Displays and edits personal profile information. Loads required assets from
-    local files only and applies a strict Content Security Policy.
+    Displays and edits personal profile information with on-screen feedback for
+    photo uploads. Loads required assets from local files only and applies a
+    strict Content Security Policy.
   -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -75,6 +76,7 @@
     <form id="photoForm" class="card">
       <input id="profilePhoto" type="file" accept="image/*" />
       <button type="button" id="uploadPhotoBtn">Upload Photo</button>
+      <span id="photoUploadStatus" class="status" aria-live="polite"></span>
     </form>
   </section>
 
