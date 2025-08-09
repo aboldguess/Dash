@@ -4,8 +4,8 @@
   <!--
     Mini readme: Profile page
     Displays and edits personal profile information with on-screen feedback for
-    photo uploads. Loads required assets from local files only and applies a
-    strict Content Security Policy.
+    saving changes and photo uploads. Loads required assets from local files
+    only and applies a strict Content Security Policy.
   -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -23,6 +23,7 @@
         <ul id="profileMenu" class="profile-menu hidden">
           <li><a href="manage-profiles.html">Manage Profiles</a></li>
           <li><a href="learning-zone.html">Learning Zone</a></li>
+          <li><a href="view-profile.html?id=me">View Profile Page</a></li>
           <li><a href="profile.html">My Details</a></li>
           <li><a href="subscription.html">Subscription Details</a></li>
           <li id="manageUsersLink" class="hidden"><a href="admin.html">Manage Users</a></li>
@@ -71,7 +72,8 @@
           <label><input type="radio" name="photoVisibility" value="team">Team</label>
         </div>
       </div>
-      <button type="submit">Save</button>
+      <button type="submit" id="saveProfileBtn">Save</button>
+      <span id="profileSaveStatus" class="status" aria-live="polite"></span>
     </form>
     <form id="photoForm" class="card">
       <input id="profilePhoto" type="file" accept="image/*" />
