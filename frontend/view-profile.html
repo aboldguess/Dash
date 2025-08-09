@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    Mini readme: View Profile page
+    Displays another user's profile based on the `id` query parameter. Uses
+    local assets and a strict Content Security Policy for security.
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws:;">
+  <title>User Profile - Dash</title>
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="dashboard.html"><strong>Dash</strong></a>
+      <!-- Profile menu with navigation options -->
+      <div class="profile">
+        <img id="navAvatar" class="avatar profile-button" alt="Profile menu" />
+        <ul id="profileMenu" class="profile-menu hidden">
+          <li><a href="manage-profiles.html">Manage Profiles</a></li>
+          <li><a href="learning-zone.html">Learning Zone</a></li>
+          <li><a href="profile.html">My Details</a></li>
+          <li><a href="subscription.html">Subscription Details</a></li>
+          <li id="manageUsersLink" class="hidden"><a href="admin.html">Manage Users</a></li>
+          <li><a href="#" id="logoutLink">Sign out</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <section class="hero">
+    <h1>User Profile</h1>
+    <img id="profileImage" class="avatar" alt="profile photo" />
+    <div id="profileDetails" class="card"></div>
+  </section>
+
+  <script src="js/app.js"></script>
+  <script src="js/view-profile.js"></script>
+</body>
+</html>

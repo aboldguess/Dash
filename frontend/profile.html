@@ -35,9 +35,41 @@
     <h1>My Details</h1>
     <img id="profileImage" class="avatar" alt="profile photo" />
     <form id="profileForm" class="card">
-      <input id="profileCareer" placeholder="Career history" />
-      <input id="profileEducation" placeholder="Education" />
-      <textarea id="profileStatement" placeholder="Personal statement"></textarea>
+      <div>
+        <input id="profileCareer" placeholder="Career history" />
+        <div class="visibility">
+          <span>Visibility:</span>
+          <label><input type="radio" name="careerVisibility" value="world">World</label>
+          <label><input type="radio" name="careerVisibility" value="platform" checked>Platform</label>
+          <label><input type="radio" name="careerVisibility" value="team">Team</label>
+        </div>
+      </div>
+      <div>
+        <input id="profileEducation" placeholder="Education" />
+        <div class="visibility">
+          <span>Visibility:</span>
+          <label><input type="radio" name="educationVisibility" value="world">World</label>
+          <label><input type="radio" name="educationVisibility" value="platform" checked>Platform</label>
+          <label><input type="radio" name="educationVisibility" value="team">Team</label>
+        </div>
+      </div>
+      <div>
+        <textarea id="profileStatement" placeholder="Personal statement"></textarea>
+        <div class="visibility">
+          <span>Visibility:</span>
+          <label><input type="radio" name="statementVisibility" value="world">World</label>
+          <label><input type="radio" name="statementVisibility" value="platform" checked>Platform</label>
+          <label><input type="radio" name="statementVisibility" value="team">Team</label>
+        </div>
+      </div>
+      <div>
+        <span>Photo visibility:</span>
+        <div class="visibility">
+          <label><input type="radio" name="photoVisibility" value="world">World</label>
+          <label><input type="radio" name="photoVisibility" value="platform" checked>Platform</label>
+          <label><input type="radio" name="photoVisibility" value="team">Team</label>
+        </div>
+      </div>
       <button type="submit">Save</button>
     </form>
     <form id="photoForm" class="card">

@@ -8,8 +8,9 @@
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
-import { authMiddleware, AuthRequest } from '../middleware/authMiddleware';
-import { Profile } from '../models/profile';
+import { authMiddleware, optionalAuth, AuthRequest } from '../middleware/authMiddleware';
+import { Profile, Visibility } from '../models/profile';
+import { User } from '../models/user';
 
 const router = Router();
 
@@ -38,11 +39,8 @@ const upload = multer({
   }
 });
 
-// All profile endpoints require authentication
-router.use(authMiddleware);
-
 /** Fetch the logged in user's profile data. */
-router.get('/me', async (req: AuthRequest, res) => {
+router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
   const profile = await Profile.findOne({ user: req.user!.id }).exec();
   res.json(profile);
 });
@@ -51,11 +49,27 @@ router.get('/me', async (req: AuthRequest, res) => {
  * Update career history, education and personal statement for the current user.
  * If a profile document does not yet exist it will be created automatically.
  */
-router.post('/me', async (req: AuthRequest, res) => {
-  const { career, education, statement } = req.body;
+router.post('/me', authMiddleware, async (req: AuthRequest, res) => {
+  const {
+    career,
+    education,
+    statement,
+    careerVisibility,
+    educationVisibility,
+    statementVisibility,
+    photoVisibility
+  } = req.body as {
+    career?: string;
+    education?: string;
+    statement?: string;
+    careerVisibility?: Visibility;
+    educationVisibility?: Visibility;
+    statementVisibility?: Visibility;
+    photoVisibility?: Visibility;
+  };
   const profile = await Profile.findOneAndUpdate(
     { user: req.user!.id },
-    { career, education, statement },
+    { career, education, statement, careerVisibility, educationVisibility, statementVisibility, photoVisibility },
     { new: true, upsert: true }
   ).exec();
   res.json(profile);
@@ -65,17 +79,44 @@ router.post('/me', async (req: AuthRequest, res) => {
  * Upload a new profile photo. The uploaded file is stored on disk and the
  * relative URL is saved in the profile document for easy retrieval.
  */
-router.post('/me/photo', upload.single('photo'), async (req: AuthRequest, res) => {
+router.post('/me/photo', authMiddleware, upload.single('photo'), async (req: AuthRequest, res) => {
   if (!req.file) {
     return res.status(400).json({ message: 'File missing' });
   }
   const photoPath = `/uploads/${req.file.filename}`;
   const profile = await Profile.findOneAndUpdate(
     { user: req.user!.id },
-    { photo: photoPath },
+    { photo: photoPath, photoVisibility: req.body.visibility as Visibility | undefined },
     { new: true, upsert: true }
   ).exec();
   res.json(profile);
+});
+
+/**
+ * Retrieve another user's profile, filtering fields based on visibility and
+ * the relationship between the requester and profile owner. Authentication is
+ * optional; supplying a token may reveal additional fields.
+ */
+router.get('/:userId', optionalAuth, async (req: AuthRequest, res) => {
+  const profile = await Profile.findOne({ user: req.params.userId }).lean().exec();
+  if (!profile) return res.status(404).json({ message: 'Profile not found' });
+  const owner = await User.findById(req.params.userId).select('team').lean();
+  const targetTeam = owner?.team?.toString();
+  const viewer = req.user;
+  const canView = (visibility: Visibility): boolean => {
+    if (visibility === 'world') return true;
+    if (visibility === 'platform') return !!viewer;
+    if (visibility === 'team') {
+      return !!(viewer && viewer.team && targetTeam && viewer.team === targetTeam);
+    }
+    return false;
+  };
+  const result: any = { user: profile.user.toString() };
+  if (profile.photo && canView(profile.photoVisibility)) result.photo = profile.photo;
+  if (profile.career && canView(profile.careerVisibility)) result.career = profile.career;
+  if (profile.education && canView(profile.educationVisibility)) result.education = profile.education;
+  if (profile.statement && canView(profile.statementVisibility)) result.statement = profile.statement;
+  return res.json(result);
 });
 
 export default router;

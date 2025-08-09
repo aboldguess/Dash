@@ -52,6 +52,37 @@ export function authMiddleware(req: AuthRequest, res: Response, next: NextFuncti
 }
 
 /**
+ * Attempt to authenticate the request but continue regardless of outcome.
+ *
+ * Used for endpoints where authentication expands access but is not required
+ * (e.g. viewing a user's public profile). If a valid JWT is supplied the
+ * decoded user details are attached to `req.user`; otherwise `req.user`
+ * remains undefined and the request proceeds without error.
+ */
+export function optionalAuth(req: AuthRequest, _res: Response, next: NextFunction) {
+  const header = req.header('Authorization');
+  const token = header?.replace('Bearer ', '');
+  if (!token) return next();
+  try {
+    const payload = jwt.verify(token, JWT_SECRET) as {
+      id: string;
+      username: string;
+      role: Role;
+      team?: string;
+    };
+    req.user = {
+      id: payload.id,
+      username: payload.username,
+      role: payload.role,
+      team: payload.team
+    };
+  } catch {
+    // Ignore invalid tokens - treated as unauthenticated
+  }
+  next();
+}
+
+/**
  * Helper to enforce that the authenticated user has one of the given roles.
  * If the user's role is not allowed, a 403 response is returned.
  */
