@@ -2,8 +2,10 @@
  * Profile page helpers
  * --------------------
  * Loads and saves the current user's profile details. Tokens are read from
- * sessionStorage for shorter-lived exposure in the browser.
- */
+ * sessionStorage for shorter-lived exposure in the browser. Profile photos are
+ * retrieved via an authenticated request so they can be stored behind a
+ * protected route on the server.
+*/
 const API_BASE_URL = window.location.origin;
 
 function loadProfile() {
@@ -32,7 +34,14 @@ function loadProfile() {
       setVis('statementVisibility', p.statementVisibility);
       setVis('photoVisibility', p.photoVisibility);
       if (p.photo) {
-        document.getElementById('profileImage').src = p.photo;
+        fetch(`${API_BASE_URL}${p.photo}`, {
+          headers: { Authorization: `Bearer ${token}` }
+        })
+          .then(r => (r.ok ? r.blob() : Promise.reject('Failed to load photo')))
+          .then(b => {
+            document.getElementById('profileImage').src = URL.createObjectURL(b);
+          })
+          .catch(err => console.error(err));
       }
     });
 }
@@ -55,7 +64,9 @@ function saveProfile(e) {
       statementVisibility: document.querySelector('input[name="statementVisibility"]:checked').value,
       photoVisibility: document.querySelector('input[name="photoVisibility"]:checked').value
     })
-  }).then(loadProfile);
+  })
+    .then(loadProfile)
+    .catch(err => console.error('Failed to save profile', err));
 }
 
 function uploadPhoto() {
@@ -69,7 +80,9 @@ function uploadPhoto() {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
     body: form
-  }).then(loadProfile);
+  })
+    .then(loadProfile)
+    .catch(err => console.error('Failed to upload photo', err));
 }
 
 // Initialise profile page once DOM is ready
