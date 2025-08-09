@@ -21,8 +21,8 @@ function escapeHtml(str) {
 }
 
 function initAdmin() {
-  // Verify the user is logged in and has the correct role
-  checkAuth();
+  // Ensure the user is logged in and has the correct role
+  if (!currentUser) checkAuth();
   if (!currentUser || currentUser.role !== 'admin') {
     window.location.href = 'dashboard.html';
     return;
@@ -214,4 +214,7 @@ function loadAllUsers() {
     });
   });
 }
+
+// Initial setup when the admin page DOM is ready
+document.addEventListener('DOMContentLoaded', initAdmin);
 

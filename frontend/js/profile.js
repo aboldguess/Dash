@@ -57,3 +57,12 @@ function uploadPhoto() {
     body: form
   }).then(loadProfile);
 }
+
+// Initialise profile page once DOM is ready
+document.addEventListener('DOMContentLoaded', () => {
+  loadProfile();
+  const form = document.getElementById('profileForm');
+  if (form) form.addEventListener('submit', saveProfile);
+  const uploadBtn = document.getElementById('uploadPhotoBtn');
+  if (uploadBtn) uploadBtn.addEventListener('click', uploadPhoto);
+});

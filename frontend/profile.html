@@ -12,20 +12,20 @@
   <title>My Details - Dash</title>
   <link rel="stylesheet" href="css/style.css">
 </head>
-<body onload="checkAuth(); loadProfile()">
+<body>
   <header>
     <nav>
       <a href="dashboard.html"><strong>Dash</strong></a>
       <!-- Profile menu with navigation options -->
       <div class="profile">
-        <img id="navAvatar" class="avatar profile-button" alt="Profile menu" onclick="toggleProfileMenu()" />
+        <img id="navAvatar" class="avatar profile-button" alt="Profile menu" />
         <ul id="profileMenu" class="profile-menu hidden">
           <li><a href="manage-profiles.html">Manage Profiles</a></li>
           <li><a href="learning-zone.html">Learning Zone</a></li>
           <li><a href="profile.html">My Details</a></li>
           <li><a href="subscription.html">Subscription Details</a></li>
           <li id="manageUsersLink" class="hidden"><a href="admin.html">Manage Users</a></li>
-          <li><a href="#" onclick="logout()">Sign out</a></li>
+          <li><a href="#" id="logoutLink">Sign out</a></li>
         </ul>
       </div>
     </nav>
@@ -34,15 +34,15 @@
   <section class="hero">
     <h1>My Details</h1>
     <img id="profileImage" class="avatar" alt="profile photo" />
-    <form id="profileForm" class="card" onsubmit="saveProfile(event)">
+    <form id="profileForm" class="card">
       <input id="profileCareer" placeholder="Career history" />
       <input id="profileEducation" placeholder="Education" />
       <textarea id="profileStatement" placeholder="Personal statement"></textarea>
       <button type="submit">Save</button>
     </form>
-    <form id="photoForm" class="card" onsubmit="return false;">
+    <form id="photoForm" class="card">
       <input id="profilePhoto" type="file" accept="image/*" />
-      <button type="button" onclick="uploadPhoto()">Upload Photo</button>
+      <button type="button" id="uploadPhotoBtn">Upload Photo</button>
     </form>
   </section>
 
