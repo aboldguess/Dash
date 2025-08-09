@@ -255,17 +255,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Dashboard-specific initialisation. All listeners are attached here to
-  // satisfy the strict CSP which forbids inline event handlers.
-  if (document.getElementById('tool-messages')) {
-    // Authenticate the user and establish the WebSocket connection.
-    checkAuth();
-
-    const avatar = document.getElementById('navAvatar');
-    if (avatar) {
-      avatar.addEventListener('click', toggleProfileMenu);
-    }
-
+  const avatar = document.getElementById('navAvatar');
+  if (avatar) {
+    const dashboard = !!document.getElementById('tool-messages');
+    checkAuth(dashboard);
+    avatar.addEventListener('click', toggleProfileMenu);
     const logoutLink = document.getElementById('logoutLink');
     if (logoutLink) {
       logoutLink.addEventListener('click', e => {
@@ -273,7 +267,11 @@ document.addEventListener('DOMContentLoaded', () => {
         logout();
       });
     }
+  }
 
+  // Dashboard-specific initialisation. All listeners are attached here to
+  // satisfy the strict CSP which forbids inline event handlers.
+  if (document.getElementById('tool-messages')) {
     document.querySelectorAll('.tool-sidebar li').forEach(li => {
       li.addEventListener('click', () => {
         const tool = li.id.replace('tool-', '');
@@ -580,7 +578,12 @@ function selectUser(name) {
 }
 
 // Verify the user is logged in before showing the dashboard
-function checkAuth() {
+/**
+ * Verify the user is authenticated and set up the navbar.
+ * If `initDashboard` is true, messaging channels and the Socket.IO
+ * connection are also initialised for the dashboard page.
+ */
+function checkAuth(initDashboard = false) {
   const token = sessionStorage.getItem('token');
   const username = sessionStorage.getItem('username');
   const role = sessionStorage.getItem('role');
@@ -611,34 +614,36 @@ function checkAuth() {
     }
   }
 
-  // After setting currentUser, connect to Socket.IO and load channels/messages
-  loadSocketIo().then(() => {
-    socket = io(API_BASE_URL);
-    socket.emit('register', currentUser.username);
-    socket.on('messages', msg => appendMessage(msg));
-    socket.on('directMessage', dm => {
-      // Only show incoming messages if conversation is open
-      if (selectedUser === dm.from || selectedUser === dm.to) {
-        appendDirectMessage(dm);
-        // If we are the recipient and the conversation is visible, notify
-        // the server immediately that we've displayed the new message.
-        if (dm.to === currentUser.username) {
-          markMessagesSeen(dm.from);
+  if (initDashboard) {
+    // After setting currentUser, connect to Socket.IO and load channels/messages
+    loadSocketIo().then(() => {
+      socket = io(API_BASE_URL);
+      socket.emit('register', currentUser.username);
+      socket.on('messages', msg => appendMessage(msg));
+      socket.on('directMessage', dm => {
+        // Only show incoming messages if conversation is open
+        if (selectedUser === dm.from || selectedUser === dm.to) {
+          appendDirectMessage(dm);
+          // If we are the recipient and the conversation is visible, notify
+          // the server immediately that we've displayed the new message.
+          if (dm.to === currentUser.username) {
+            markMessagesSeen(dm.from);
+          }
+        } else if (dm.to === currentUser.username) {
+          incrementUnread(dm.from);
         }
-      } else if (dm.to === currentUser.username) {
-        incrementUnread(dm.from);
-      }
+      });
+      // Refresh unread counts when other tabs mark messages as read
+      socket.on('messagesSeen', () => {
+        loadUnreadCounts();
+      });
+      // Update presence indicators in real time
+      socket.on('userOnline', name => handlePresence(name, true));
+      socket.on('userOffline', name => handlePresence(name, false));
+      // Default to messaging view once authenticated
+      selectTool('messages');
     });
-    // Refresh unread counts when other tabs mark messages as read
-    socket.on('messagesSeen', () => {
-      loadUnreadCounts();
-    });
-    // Update presence indicators in real time
-    socket.on('userOnline', name => handlePresence(name, true));
-    socket.on('userOffline', name => handlePresence(name, false));
-    // Default to messaging view once authenticated
-    selectTool('messages');
-  });
+  }
 }
 
 // Clear stored credentials and return to login page
