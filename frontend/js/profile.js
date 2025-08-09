@@ -22,6 +22,15 @@ function loadProfile() {
       document.getElementById('profileCareer').value = p.career || '';
       document.getElementById('profileEducation').value = p.education || '';
       document.getElementById('profileStatement').value = p.statement || '';
+      // Set visibility radio buttons based on stored preferences
+      const setVis = (name, value) => {
+        const radio = document.querySelector(`input[name="${name}"][value="${value || 'platform'}"]`);
+        if (radio) radio.checked = true;
+      };
+      setVis('careerVisibility', p.careerVisibility);
+      setVis('educationVisibility', p.educationVisibility);
+      setVis('statementVisibility', p.statementVisibility);
+      setVis('photoVisibility', p.photoVisibility);
       if (p.photo) {
         document.getElementById('profileImage').src = p.photo;
       }
@@ -40,7 +49,11 @@ function saveProfile(e) {
     body: JSON.stringify({
       career: document.getElementById('profileCareer').value,
       education: document.getElementById('profileEducation').value,
-      statement: document.getElementById('profileStatement').value
+      statement: document.getElementById('profileStatement').value,
+      careerVisibility: document.querySelector('input[name="careerVisibility"]:checked').value,
+      educationVisibility: document.querySelector('input[name="educationVisibility"]:checked').value,
+      statementVisibility: document.querySelector('input[name="statementVisibility"]:checked').value,
+      photoVisibility: document.querySelector('input[name="photoVisibility"]:checked').value
     })
   }).then(loadProfile);
 }
@@ -49,8 +62,9 @@ function uploadPhoto() {
   const token = sessionStorage.getItem('token');
   const file = document.getElementById('profilePhoto').files[0];
   if (!file) return;
-  const form = new FormData();
-  form.append('photo', file);
+    const form = new FormData();
+    form.append('photo', file);
+    form.append('visibility', document.querySelector('input[name="photoVisibility"]:checked').value);
   fetch(`${API_BASE_URL}/api/profile/me/photo`, {
     method: 'POST',
     headers: { Authorization: `Bearer ${token}` },
