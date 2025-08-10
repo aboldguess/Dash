@@ -30,6 +30,15 @@ if (-not (Test-Path ".env") -and (Test-Path ".env.example")) {
     Copy-Item ".env.example" ".env"
 }
 
+# Ensure a JWT secret is present; generate one if missing
+if (-not (Select-String -Path ".env" -Pattern '^JWT_SECRET=' -Quiet)) {
+    Write-Host "No JWT_SECRET found. Generating a secure default..."
+    $bytes = New-Object byte[] 32
+    [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
+    $secret = [Convert]::ToBase64String($bytes)
+    Add-Content ".env" "`nJWT_SECRET=$secret"
+}
+
 $env:DB_URI = $dbUri
 Write-Host "Using database URI: $dbUri"
 

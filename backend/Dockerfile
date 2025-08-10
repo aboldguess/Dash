@@ -1,21 +1,24 @@
-# Use official Node.js LTS image
-FROM node:18-alpine
+# Dockerfile
+# Purpose: Build a production-ready image for the Dash backend.
+# Structure:
+#   1. Builder stage installs all dependencies and compiles TypeScript.
+#   2. Runtime stage installs only production deps and runs compiled code.
+# Usage:
+#   docker build -t dash-backend .
 
-# Create app directory
+# --- Builder stage ---
+FROM node:18-alpine AS build
 WORKDIR /usr/src/app
-
-# Copy package.json and package-lock.json
 COPY package*.json ./
-
-# Install dependencies
-RUN npm install --production
-
-# Copy source code
+RUN npm ci
 COPY . .
-
-# Build TypeScript
 RUN npm run build
 
-# Expose port and start the app
+# --- Runtime stage ---
+FROM node:18-alpine
+WORKDIR /usr/src/app
+COPY package*.json ./
+RUN npm ci --omit=dev
+COPY --from=build /usr/src/app/dist ./dist
 EXPOSE 3000
 CMD ["node", "dist/index.js"]
