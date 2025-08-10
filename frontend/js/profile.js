@@ -4,8 +4,8 @@
  * Loads and saves the current user's profile details. Tokens are read from
  * sessionStorage for shorter-lived exposure in the browser. Profile photos are
  * retrieved via an authenticated request so they can be stored behind a
- * protected route on the server. Photo uploads provide immediate on-screen
- * status updates to keep the user informed.
+ * protected route on the server. Save operations and photo uploads provide
+ * immediate on-screen status updates to keep the user informed.
 */
 const API_BASE_URL = window.location.origin;
 
@@ -50,6 +50,13 @@ function loadProfile() {
 function saveProfile(e) {
   e.preventDefault();
   const token = sessionStorage.getItem('token');
+  const statusEl = document.getElementById('profileSaveStatus');
+  const saveBtn = document.getElementById('saveProfileBtn');
+
+  if (statusEl) statusEl.textContent = 'Saving profile...';
+  if (saveBtn) saveBtn.disabled = true;
+  console.log('Saving profile details');
+
   fetch(`${API_BASE_URL}/api/profile/me`, {
     method: 'POST',
     headers: {
@@ -66,8 +73,20 @@ function saveProfile(e) {
       photoVisibility: document.querySelector('input[name="photoVisibility"]:checked').value
     })
   })
-    .then(loadProfile)
-    .catch(err => console.error('Failed to save profile', err));
+    .then(r => {
+      if (!r.ok) throw new Error('Save failed');
+      console.log('Profile save complete');
+      if (statusEl) statusEl.textContent = 'Profile saved';
+      loadProfile();
+    })
+    .catch(err => {
+      console.error('Failed to save profile', err);
+      if (statusEl) statusEl.textContent = 'Save failed';
+    })
+    .finally(() => {
+      if (saveBtn) saveBtn.disabled = false;
+      if (statusEl) setTimeout(() => (statusEl.textContent = ''), 3000);
+    });
 }
 
 function uploadPhoto() {
