@@ -1,4 +1,12 @@
+# .dockerignore
+# Purpose: Prevents unnecessary files from being included in the Docker build context.
+# Structure: Entries grouped by category.
+
+# Dependencies
 node_modules
-src
-*.ts
-!*dist
+
+# Build artifacts
+/dist
+
+# Logs
+*.log
