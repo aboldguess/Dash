@@ -41,10 +41,13 @@ router.use(authMiddleware);
 router.get('/', async (req: AuthRequest, res) => {
   // Only list members of the same team so workspaces remain isolated
   const teamId = req.user!.team;
-  const users = await User.find({ team: teamId }).select('username').exec();
+  const users = await User.find({ team: teamId })
+    .select('username lastSeen')
+    .exec();
   const result = users.map(u => ({
     username: u.username,
-    online: isOnline(u.username)
+    online: isOnline(u.username),
+    lastSeen: u.lastSeen || null
   }));
   res.json(result);
 });
