@@ -57,6 +57,9 @@ let selectedUser = null; // username of direct message recipient
 // Track unread direct messages for each user so their names can be bolded
 let unreadCounts = {};
 let activeTool = 'messages'; // currently selected tool
+// Track pagination state for message history
+let oldestMessageTimestamp = null;
+let loadingOlderMessages = false;
 
 /** Escape HTML special characters to mitigate XSS when using innerHTML. */
 function escapeHtml(str) {
@@ -285,6 +288,17 @@ document.addEventListener('DOMContentLoaded', () => {
     const channelSelect = document.getElementById('channelSelect');
     if (channelSelect) channelSelect.addEventListener('change', changeChannel);
 
+    const messageList = document.getElementById('messageList');
+    if (messageList)
+      messageList.addEventListener('scroll', () => {
+        if (messageList.scrollTop === 0 && !loadingOlderMessages) {
+          loadingOlderMessages = true;
+          loadMessages(false).finally(() => {
+            loadingOlderMessages = false;
+          });
+        }
+      });
+
     const contactForm = document.getElementById('contactForm');
     if (contactForm)
       contactForm.addEventListener('submit', e => {
@@ -397,42 +411,106 @@ function changeChannel() {
 
 // Retrieve chat history for the active channel or direct conversation. The
 // returned promise resolves once messages have been rendered so callers can
-// chain additional actions.
-function loadMessages() {
+// chain additional actions. When `initial` is true the latest batch is
+// requested and the view scrolled to the bottom. Subsequent calls with
+// `initial` false prepend older messages when the user scrolls upwards.
+function loadMessages(initial = true) {
   const list = document.getElementById('messageList');
-  list.innerHTML = '';
+  if (initial) {
+    list.innerHTML = '';
+    oldestMessageTimestamp = null;
+  }
+
+  console.debug('Loading messages', {
+    initial,
+    selectedUser,
+    currentChannel,
+    before: oldestMessageTimestamp
+  });
+
+  const params = new URLSearchParams();
+  params.set('limit', '20');
+  if (!initial && oldestMessageTimestamp) {
+    params.set('before', oldestMessageTimestamp);
+  }
 
   if (selectedUser) {
     // Load direct messages with the selected user
-    return fetch(`${API_BASE_URL}/api/users/conversation/${selectedUser}`, {
-      headers: { Authorization: `Bearer ${currentUser.token}` }
-    })
+    return fetch(
+      `${API_BASE_URL}/api/users/conversation/${selectedUser}?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${currentUser.token}` } }
+    )
       .then(r => r.json())
       .then(msgs => {
-        msgs.forEach(appendDirectMessage);
-        // Reload unread counts as messages have been marked seen
-        loadUnreadCounts();
+        const prevHeight = list.scrollHeight;
+        msgs
+          .reverse() // API returns newest first
+          .forEach(m => {
+            if (initial) appendDirectMessage(m, false);
+            else prependDirectMessage(m);
+          });
+        if (msgs.length > 0) {
+          oldestMessageTimestamp = msgs[0].createdAt;
+        }
+        if (initial) {
+          scrollMessagesToBottom();
+          // Reload unread counts as messages have been marked seen
+          loadUnreadCounts();
+        } else {
+          list.scrollTop = list.scrollHeight - prevHeight;
+        }
       });
   } else if (currentChannel) {
     // Retrieve the latest chat messages for the active channel
-    return fetch(`${API_BASE_URL}/api/messages/channel/${currentChannel}`)
+    return fetch(
+      `${API_BASE_URL}/api/messages/channel/${currentChannel}?${params.toString()}`,
+      { headers: { Authorization: `Bearer ${currentUser.token}` } }
+    )
       .then(r => r.json())
-      .then(msgs => msgs.forEach(appendMessage));
+      .then(msgs => {
+        const prevHeight = list.scrollHeight;
+        msgs
+          .reverse()
+          .forEach(m => {
+            if (initial) appendMessage(m, false);
+            else prependMessage(m);
+          });
+        if (msgs.length > 0) {
+          oldestMessageTimestamp = msgs[0].createdAt;
+        }
+        if (initial) {
+          scrollMessagesToBottom();
+        } else {
+          list.scrollTop = list.scrollHeight - prevHeight;
+        }
+      });
   }
 
   return Promise.resolve();
 }
 
-// Helper to add a single message element to the chat log
-  function appendMessage(m) {
-    const list = document.getElementById('messageList');
-    const div = document.createElement('div');
-    const strong = document.createElement('strong');
-    strong.textContent = `${m.user}:`;
-    div.appendChild(strong);
-    div.appendChild(document.createTextNode(' ' + m.text));
-    list.appendChild(div);
-  }
+/** Build a DOM element for a channel message. */
+function buildChannelMessage(m) {
+  const div = document.createElement('div');
+  const strong = document.createElement('strong');
+  strong.textContent = `${m.user}:`;
+  div.appendChild(strong);
+  div.appendChild(document.createTextNode(' ' + m.text));
+  return div;
+}
+
+/** Append a channel message to the end of the list. */
+function appendMessage(m, scroll = true) {
+  const list = document.getElementById('messageList');
+  list.appendChild(buildChannelMessage(m));
+  if (scroll) scrollMessagesToBottom();
+}
+
+/** Prepend a channel message to the start of the list. */
+function prependMessage(m) {
+  const list = document.getElementById('messageList');
+  list.insertBefore(buildChannelMessage(m), list.firstChild);
+}
 
 // Render a direct message including timestamp and avatars
 function formatRelativeTime(dateStr) {
@@ -452,36 +530,51 @@ function formatRelativeTime(dateStr) {
   return `${days} day${days === 1 ? '' : 's'} ago`;
 }
 
-function appendDirectMessage(m) {
-    const list = document.getElementById('messageList');
-    const div = document.createElement('div');
-    // Convert message timestamp to a relative description like "5 minutes ago"
-    const time = formatRelativeTime(m.createdAt);
-    div.className = 'message';
+function buildDirectMessage(m) {
+  const div = document.createElement('div');
+  // Convert message timestamp to a relative description like "5 minutes ago"
+  const time = formatRelativeTime(m.createdAt);
+  div.className = 'message';
 
-    const img = document.createElement('img');
-    img.className = 'avatar';
-    img.src = getGravatarUrl(m.from);
-    img.alt = 'avatar';
-    div.appendChild(img);
+  const img = document.createElement('img');
+  img.className = 'avatar';
+  img.src = getGravatarUrl(m.from);
+  img.alt = 'avatar';
+  div.appendChild(img);
 
-    const userSpan = document.createElement('span');
-    userSpan.className = 'user';
-    userSpan.textContent = `${m.from}:`;
-    div.appendChild(userSpan);
+  const userSpan = document.createElement('span');
+  userSpan.className = 'user';
+  userSpan.textContent = `${m.from}:`;
+  div.appendChild(userSpan);
 
-    const textSpan = document.createElement('span');
-    textSpan.className = 'text';
-    textSpan.textContent = m.text;
-    div.appendChild(textSpan);
+  const textSpan = document.createElement('span');
+  textSpan.className = 'text';
+  textSpan.textContent = m.text;
+  div.appendChild(textSpan);
 
-    const timeSpan = document.createElement('span');
-    timeSpan.className = 'time';
-    timeSpan.textContent = time;
-    div.appendChild(timeSpan);
+  const timeSpan = document.createElement('span');
+  timeSpan.className = 'time';
+  timeSpan.textContent = time;
+  div.appendChild(timeSpan);
+  return div;
+}
 
-    list.appendChild(div);
-  }
+function appendDirectMessage(m, scroll = true) {
+  const list = document.getElementById('messageList');
+  list.appendChild(buildDirectMessage(m));
+  if (scroll) scrollMessagesToBottom();
+}
+
+function prependDirectMessage(m) {
+  const list = document.getElementById('messageList');
+  list.insertBefore(buildDirectMessage(m), list.firstChild);
+}
+
+/** Scroll the message list to show the newest message. */
+function scrollMessagesToBottom() {
+  const list = document.getElementById('messageList');
+  list.scrollTop = list.scrollHeight;
+}
 
 // Fetch list of all users for the sidebar
 function loadUsers() {
