@@ -1,12 +1,27 @@
 /**
- * Mini readme: Leave routes
- * ------------------------
- * Provides endpoints for listing and managing leave requests. All routes
- * enforce authentication through the shared auth middleware. The GET handler
- * returns either all leave entries (for administrators and team admins) or
- * only the authenticated user's records. The POST handler validates required
- * fields before creating or updating leave records.
-*/
+ * @file Leave routes.
+ *
+ * Purpose
+ * -------
+ * REST endpoints for listing and managing leave requests.
+ *
+ * Structure
+ * ---------
+ * - Initialise an Express router.
+ * - Apply authentication middleware globally.
+ * - `GET /`: list leave records (admins see all, others only their own).
+ * - `POST /`: validate payload then create or update a leave entry.
+ *
+ * Key Interactions
+ * ----------------
+ * - Uses the `Leave` Mongoose model for data persistence.
+ * - Leverages `authMiddleware` and `requireRole` for JWT validation and role enforcement.
+ *
+ * Assumptions
+ * -----------
+ * - `JWT_SECRET` environment variable exists for token verification.
+ * - `DB_URI` environment variable supplies MongoDB connection details.
+ */
 import { Router, Response } from 'express';
 // express-validator enables declarative validation of incoming requests
 import { check, validationResult } from 'express-validator';
