@@ -1,7 +1,7 @@
 <!--
-  Mini readme: Dash logo favicon
+  Mini readme: Dash logo asset
   Provides the brand wordmark with a leading triple bar symbol. Rendered as
-  SVG so it scales cleanly for the browser tab icon.
+  SVG so it scales cleanly for reuse across the UI.
 -->
 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 40">
   <text x="0" y="30" font-family="Cambria Math, 'Cambria Math_MSFontService', serif" font-style="oblique" font-weight="700" font-size="30">≡</text>
