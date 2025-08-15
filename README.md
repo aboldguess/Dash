@@ -95,7 +95,21 @@ Dash requires Node.js 18+, npm, Docker and access to a MongoDB database.
 
 ## Project Setup
 1. Clone this repository.
-2. Copy `backend/.env.example` to `backend/.env` and set `DB_URI` to your MongoDB connection string. Optionally set `JWT_SECRET` for token signing.
+2. Copy `backend/.env.example` to `backend/.env` and set `DB_URI` to your MongoDB connection string. Create a `JWT_SECRET` for token signing:
+   - Generate a 32‑byte secret (works on Windows, Linux and Raspberry Pi):
+     ```bash
+     node -e "console.log(require('crypto').randomBytes(32).toString('base64'))"
+     ```
+   - Add the output to `backend/.env`:
+     - **Linux/Raspberry Pi/macOS:**
+       ```bash
+       echo "JWT_SECRET=<paste-output>" >> backend/.env
+       ```
+     - **Windows PowerShell:**
+       ```powershell
+       Add-Content backend/.env "`nJWT_SECRET=<paste-output>"
+       ```
+   The start scripts will generate a secret automatically if one is missing and display it in the console.
 3. Install dependencies from the repository root (this installs the backend automatically):
    ```bash
    npm install
@@ -122,7 +136,7 @@ Options:
 - `-prod` — run in production mode
 - `-dbUri` — specify an external MongoDB URI
 
-All output is logged to `dash_windows_start.log`.
+If `backend/.env` does not contain `JWT_SECRET`, the script generates one and prints it. All output is logged to `dash_windows_start.log`.
 
 #### Raspberry Pi / Linux
 The `dash-start-rpi.sh` script installs Node.js 18 if required, installs dependencies, initialises the database, builds the code and launches the server. It also tries to start MongoDB in Docker if no local instance is detected.
@@ -133,10 +147,10 @@ chmod +x ./dash-start-rpi.sh
 ./dash-start-rpi.sh --port 4000 --prod # production mode
 ```
 
-Logs are written to `dash_rpi_start.log`.
+If no `JWT_SECRET` is found in `backend/.env`, the script creates one and displays it. Logs are written to `dash_rpi_start.log`.
 
 ### Manual Run
-1. Ensure `DB_URI` is set (either in `backend/.env` or exported in the shell).
+1. Ensure `DB_URI` and `JWT_SECRET` are set (either in `backend/.env` or exported in the shell).
 2. Initialise the database:
    ```bash
    cd backend

@@ -1,7 +1,9 @@
 <#
 Runs the Dash backend on Windows with optional port, database URI and
 production mode parameters. The script attempts to ensure MongoDB is running
-locally using Docker when available. All output is logged to aid debugging.
+locally using Docker when available. Required secrets are checked before
+startup; if a JWT secret is missing one is generated and printed to the
+console. All output is logged to aid debugging.
 
 Usage examples:
   .\start-windows.ps1 -port 4000
@@ -37,6 +39,11 @@ if (-not (Select-String -Path ".env" -Pattern '^JWT_SECRET=' -Quiet)) {
     [System.Security.Cryptography.RandomNumberGenerator]::Create().GetBytes($bytes)
     $secret = [Convert]::ToBase64String($bytes)
     Add-Content ".env" "`nJWT_SECRET=$secret"
+    $env:JWT_SECRET = $secret
+    Write-Host "Generated JWT_SECRET: $secret"
+} else {
+    $env:JWT_SECRET = (Get-Content ".env" | Select-String '^JWT_SECRET=').ToString().Split('=')[1]
+    Write-Host "Using existing JWT_SECRET from .env"
 }
 
 $env:DB_URI = $dbUri
