@@ -5,6 +5,15 @@ import { DirectMessage } from '../models/directMessage';
 import { isOnline } from '../presence';
 
 /**
+ * Mini readme: User and messaging routes
+ * -------------------------------------
+ * Exposes authenticated endpoints for user listing, direct message
+ * conversations with pagination support, unread counters and message read
+ * acknowledgements. These routes power the dashboard's user sidebar and
+ * direct messaging features.
+ */
+
+/**
  * Determine whether two users may exchange direct messages. Users in the same
  * team are always allowed. Cross-team messages require the recipient to be
  * listed in the sender's allowedContacts array.
@@ -42,6 +51,8 @@ router.get('/', async (req: AuthRequest, res) => {
 
 /**
  * Retrieve the conversation between the logged in user and another user.
+ * Supports pagination so clients can load the latest messages first and
+ * request older history on demand.
  */
 router.get('/conversation/:user', async (req: AuthRequest, res) => {
   const other = req.params.user;
@@ -58,13 +69,23 @@ router.get('/conversation/:user', async (req: AuthRequest, res) => {
     { isSeen: true }
   );
 
-  // Retrieve the conversation after updating read state
-  const msgs = await DirectMessage.find({
+  const { before, limit } = req.query;
+  const match: any = {
     $or: [
       { from: current, to: other },
       { from: other, to: current }
     ]
-  }).sort({ createdAt: 1 }).exec();
+  };
+  if (before) {
+    match.createdAt = { $lt: new Date(before as string) };
+  }
+  const pageSize = Math.min(parseInt(limit as string) || 20, 100);
+
+  // Retrieve the conversation after updating read state
+  const msgs = await DirectMessage.find(match)
+    .sort({ createdAt: -1 })
+    .limit(pageSize)
+    .exec();
 
   // Inform the reader's other sessions so unread counters stay in sync
   if (unseen.modifiedCount > 0) {

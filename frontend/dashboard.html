@@ -59,9 +59,14 @@
         <h2>Instant Messages</h2>
         <label for="channelSelect">Channel:</label>
         <select id="channelSelect"></select>
-        <div id="messageList"></div>
-        <input id="messageInput" placeholder="Message" />
-        <button id="sendButton">Send</button>
+        <!-- Chat container keeps message input pinned to bottom -->
+        <div class="chat-container">
+          <div id="messageList" class="message-list"></div>
+          <div class="message-input">
+            <input id="messageInput" placeholder="Message" />
+            <button id="sendButton">Send</button>
+          </div>
+        </div>
       </section>
 
       <!-- Placeholder sections for future tools -->

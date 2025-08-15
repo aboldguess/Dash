@@ -2,15 +2,34 @@ import { Router } from 'express';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
 import { Message } from '../models/message';
 
+/**
+ * Mini readme: Channel message routes
+ * ----------------------------------
+ * Express router providing authenticated CRUD operations for chat channel
+ * messages. Supports paginated retrieval so clients can request recent
+ * messages first and load older history on demand.
+ */
+
 const router = Router();
 
 // Require users to be authenticated to view or send messages
 router.use(authMiddleware);
 
-// Retrieve all chat messages from the database
-// Return messages for a specific channel
+// Retrieve messages for a specific channel with optional pagination
 router.get('/channel/:id', async (req, res) => {
-  const msgs = await Message.find({ channel: req.params.id }).exec();
+  const { before, limit } = req.query;
+  const query: any = { channel: req.params.id };
+
+  if (before) {
+    query.createdAt = { $lt: new Date(before as string) };
+  }
+
+  // Cap page size to avoid excessive payloads
+  const pageSize = Math.min(parseInt(limit as string) || 20, 100);
+  const msgs = await Message.find(query)
+    .sort({ createdAt: -1 })
+    .limit(pageSize)
+    .exec();
   res.json(msgs);
 });
 
