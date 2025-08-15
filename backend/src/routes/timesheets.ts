@@ -1,5 +1,14 @@
+/**
+ * Mini readme: Timesheet routes
+ * -----------------------------
+ * Exposes endpoints for listing and submitting timesheets. All routes are
+ * protected by authentication middleware. The GET handler returns either all
+ * timesheets (for admin roles) or only the authenticated user's entries.
+ * The POST handler allows admins to submit or update timesheets on behalf of
+ * users.
+ */
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middleware/authMiddleware';
+import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
 import { Timesheet } from '../models/timesheet';
 
 const router = Router();
@@ -8,8 +17,24 @@ const router = Router();
 router.use(authMiddleware);
 
 // List all timesheets
-router.get('/', async (_, res) => {
-  const list = await Timesheet.find().exec();
+router.get('/', async (req: AuthRequest, res) => {
+  // If authentication middleware failed to attach a user, forbid the request
+  if (!req.user) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  const { id, role } = req.user;
+
+  // Administrators can view all timesheets, everyone else only their own
+  const query = role === 'admin' || role === 'teamAdmin'
+    ? {}
+    : { userId: Number(id) };
+
+  const list = await Timesheet.find(query).exec();
+
+  // Provide simple debug logging to aid troubleshooting
+  console.debug('Timesheet query', { user: id, role, criteria: query });
+
   res.json(list);
 });
 
