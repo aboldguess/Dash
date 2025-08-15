@@ -4,10 +4,12 @@
  * Exposes endpoints for listing and submitting timesheets. All routes are
  * protected by authentication middleware. The GET handler returns either all
  * timesheets (for admin roles) or only the authenticated user's entries.
- * The POST handler allows admins to submit or update timesheets on behalf of
- * users.
+ * The POST handler validates mandatory fields and allows admins to submit or
+ * update timesheets on behalf of users.
  */
-import { Router } from 'express';
+import { Router, Response } from 'express';
+// express-validator provides declarative request validation helpers
+import { check, validationResult } from 'express-validator';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
 import { Timesheet } from '../models/timesheet';
 
@@ -17,7 +19,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // List all timesheets
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   // If authentication middleware failed to attach a user, forbid the request
   if (!req.user) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -39,17 +41,34 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // Submit or update a timesheet
-router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
-  const { id, ...data } = req.body;
+router.post(
+  '/',
+  requireRole(['admin', 'teamAdmin']),
+  [
+    // Validate essential fields before processing the request
+    check('userId').isNumeric().withMessage('userId must be numeric'),
+    check('hours').isFloat({ gt: 0 }).withMessage('hours must be a positive number'),
+    check('date').isISO8601().withMessage('date must be a valid ISO 8601 date'),
+  ],
+  async (req: AuthRequest, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      // Log validation issues to aid debugging
+      console.debug('Timesheet validation errors', { errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-  if (id) {
-    const updated = await Timesheet.findByIdAndUpdate(id, data, { new: true });
-    return res.status(201).json(updated);
+    const { id, ...data } = req.body;
+
+    if (id) {
+      const updated = await Timesheet.findByIdAndUpdate(id, data, { new: true });
+      return res.status(201).json(updated);
+    }
+
+    const sheet = new Timesheet(data);
+    await sheet.save();
+    res.status(201).json(sheet);
   }
-
-  const sheet = new Timesheet(data);
-  await sheet.save();
-  res.status(201).json(sheet);
-});
+);
 
 export default router;
