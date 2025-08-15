@@ -1,0 +1,9 @@
+<!--
+  Mini readme: Dash logo favicon
+  Provides the brand wordmark with a leading triple bar symbol. Rendered as
+  SVG so it scales cleanly for the browser tab icon.
+-->
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 150 40">
+  <text x="0" y="30" font-family="Cambria Math, 'Cambria Math_MSFontService', serif" font-style="oblique" font-weight="700" font-size="30">≡</text>
+  <text x="30" y="30" font-family="Rockwell, 'Rockwell_MSFontService', serif" font-style="italic" font-weight="700" font-size="30">Dash</text>
+</svg>

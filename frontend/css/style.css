@@ -84,6 +84,22 @@ header nav a:hover {
   text-decoration: underline;
 }
 
+/* Wordmark branding: bold italic Rockwell with a leading triple bar */
+header nav .wordmark {
+  font-family: "Rockwell", serif;
+  font-weight: 700;
+  font-style: italic;
+  display: inline-flex;
+  align-items: center;
+}
+
+header nav .wordmark::before {
+  content: "\2261"; /* Unicode for ≡ */
+  font-family: "Cambria Math", serif;
+  font-style: oblique;
+  margin-right: 0.25rem;
+}
+
 /* Profile avatar button and dropdown */
 .profile {
   position: relative;
