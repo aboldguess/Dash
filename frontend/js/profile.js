@@ -5,8 +5,10 @@
  * sessionStorage for shorter-lived exposure in the browser. Profile photos are
  * retrieved via an authenticated request so they can be stored behind a
  * protected route on the server. Save operations and photo uploads provide
- * immediate on-screen status updates to keep the user informed.
-*/
+ * immediate on-screen status updates to keep the user informed. After photo
+ * uploads the navigation avatar is also refreshed and the photo path stored in
+ * sessionStorage so other pages can render the protected image.
+ */
 const API_BASE_URL = window.location.origin;
 
 function loadProfile() {
@@ -19,7 +21,7 @@ function loadProfile() {
   fetch(`${API_BASE_URL}/api/profile/me`, {
     headers: { Authorization: `Bearer ${token}` }
   })
-    .then(r => r.json())
+    .then(r => (r.ok ? r.json() : Promise.reject('Failed to load profile')))
     .then(p => {
       if (!p) return;
       document.getElementById('profileCareer').value = p.career || '';
@@ -27,7 +29,9 @@ function loadProfile() {
       document.getElementById('profileStatement').value = p.statement || '';
       // Set visibility radio buttons based on stored preferences
       const setVis = (name, value) => {
-        const radio = document.querySelector(`input[name="${name}"][value="${value || 'platform'}"]`);
+        const radio = document.querySelector(
+          `input[name="${name}"][value="${value || 'platform'}"]`
+        );
         if (radio) radio.checked = true;
       };
       setVis('careerVisibility', p.careerVisibility);
@@ -35,16 +39,33 @@ function loadProfile() {
       setVis('statementVisibility', p.statementVisibility);
       setVis('photoVisibility', p.photoVisibility);
       if (p.photo) {
+        // Photo paths require an authenticated request. Store the relative
+        // path for other pages and update the navigation avatar immediately.
         fetch(`${API_BASE_URL}${p.photo}`, {
           headers: { Authorization: `Bearer ${token}` }
         })
           .then(r => (r.ok ? r.blob() : Promise.reject('Failed to load photo')))
           .then(b => {
-            document.getElementById('profileImage').src = URL.createObjectURL(b);
+            const url = URL.createObjectURL(b);
+            document.getElementById('profileImage').src = url;
+            const nav = document.getElementById('navAvatar');
+            if (nav) nav.src = url;
+            sessionStorage.setItem('avatarPath', p.photo);
           })
           .catch(err => console.error(err));
+      } else {
+        // No photo stored – ensure nav uses fallback avatar.
+        sessionStorage.removeItem('avatarPath');
+        const nav = document.getElementById('navAvatar');
+        if (nav) {
+          const username = sessionStorage.getItem('username') || '';
+          const fallback =
+            sessionStorage.getItem('avatarUrl') || getGravatarUrl(username);
+          nav.src = fallback;
+        }
       }
-    });
+    })
+    .catch(err => console.error('Profile load failed', err));
 }
 
 function saveProfile(e) {

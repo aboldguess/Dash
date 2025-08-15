@@ -171,7 +171,7 @@ function login() {
       error.status = r.status;
       throw error;
     })
-    .then(u => {
+    .then(async u => {
       // Persist auth details in sessionStorage so other pages can verify
       // login state without leaving tokens sitting in long-term storage.
       sessionStorage.setItem('token', u.token);
@@ -180,6 +180,23 @@ function login() {
       sessionStorage.setItem('role', u.role);
       // Store calculated gravatar URL so it can be reused on the dashboard
       sessionStorage.setItem('avatarUrl', getGravatarUrl(u.username));
+
+      // Preload existing profile photo so navigation avatar is correct on
+      // the first page load after login. Any errors are logged but do not
+      // block the redirect.
+      try {
+        const profileRes = await fetch(`${API_BASE_URL}/api/profile/me`, {
+          headers: { Authorization: `Bearer ${u.token}` }
+        });
+        if (profileRes.ok) {
+          const profile = await profileRes.json();
+          if (profile.photo) {
+            sessionStorage.setItem('avatarPath', profile.photo);
+          }
+        }
+      } catch (err) {
+        console.error('Failed to preload profile', err);
+      }
 
       // Redirect straight to the dashboard where the websocket
       // connection will be established.
@@ -715,15 +732,34 @@ function checkAuth(initDashboard = false) {
     return;
   }
 
-  const avatarUrl = sessionStorage.getItem('avatarUrl') || getGravatarUrl(username);
-  // Store all relevant details for convenience in other functions
-  currentUser = { username, token, avatarUrl, role };
+  const avatarPath = sessionStorage.getItem('avatarPath');
+  const gravatar = sessionStorage.getItem('avatarUrl') || getGravatarUrl(username);
+  // Store all relevant details for convenience in other functions. The
+  // avatarUrl field will be updated later if a protected photo exists.
+  currentUser = { username, token, avatarUrl: gravatar, role };
 
-  // Populate the navbar avatar if present
+  // Populate the navbar avatar if present. If a profile photo exists it must
+  // be fetched with authorization and converted to a blob URL for display.
   const avatarImg = document.getElementById('navAvatar');
   if (avatarImg) {
-    avatarImg.src = avatarUrl;
     avatarImg.alt = `${username} profile`;
+    if (avatarPath) {
+      fetch(`${API_BASE_URL}${avatarPath}`, {
+        headers: { Authorization: `Bearer ${token}` }
+      })
+        .then(r => (r.ok ? r.blob() : Promise.reject('Failed to load avatar')))
+        .then(b => {
+          const url = URL.createObjectURL(b);
+          avatarImg.src = url;
+          currentUser.avatarUrl = url;
+        })
+        .catch(err => {
+          console.error(err);
+          avatarImg.src = gravatar;
+        });
+    } else {
+      avatarImg.src = gravatar;
+    }
   }
 
   // Show the "Manage Users" menu option only for admins
@@ -773,6 +809,7 @@ function logout() {
   sessionStorage.removeItem('token');
   sessionStorage.removeItem('username');
   sessionStorage.removeItem('avatarUrl');
+  sessionStorage.removeItem('avatarPath');
   sessionStorage.removeItem('role');
   if (socket) {
     socket.disconnect();
