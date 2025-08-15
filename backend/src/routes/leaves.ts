@@ -4,9 +4,12 @@
  * Provides endpoints for listing and managing leave requests. All routes
  * enforce authentication through the shared auth middleware. The GET handler
  * returns either all leave entries (for administrators and team admins) or
- * only the authenticated user's records.
- */
-import { Router } from 'express';
+ * only the authenticated user's records. The POST handler validates required
+ * fields before creating or updating leave records.
+*/
+import { Router, Response } from 'express';
+// express-validator enables declarative validation of incoming requests
+import { check, validationResult } from 'express-validator';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
 import { Leave } from '../models/leave';
 
@@ -16,7 +19,7 @@ const router = Router();
 router.use(authMiddleware);
 
 // List leaves
-router.get('/', async (req: AuthRequest, res) => {
+router.get('/', async (req: AuthRequest, res: Response) => {
   // If authentication failed to populate a user object, forbid the request
   if (!req.user) {
     return res.status(403).json({ message: 'Forbidden' });
@@ -38,17 +41,38 @@ router.get('/', async (req: AuthRequest, res) => {
 });
 
 // Request or update leave
-router.post('/', requireRole(['admin', 'teamAdmin']), async (req, res) => {
-  const { id, ...data } = req.body;
+router.post(
+  '/',
+  requireRole(['admin', 'teamAdmin']),
+  [
+    // Validate required leave fields
+    check('userId').isNumeric().withMessage('userId must be numeric'),
+    check('startDate').isISO8601().withMessage('startDate must be a valid ISO 8601 date'),
+    check('endDate').isISO8601().withMessage('endDate must be a valid ISO 8601 date'),
+    check('status')
+      .optional()
+      .isIn(['pending', 'approved', 'rejected'])
+      .withMessage('status must be pending, approved, or rejected'),
+  ],
+  async (req: AuthRequest, res: Response) => {
+    const errors = validationResult(req);
+    if (!errors.isEmpty()) {
+      // Output validation details for easier debugging
+      console.debug('Leave validation errors', { errors: errors.array() });
+      return res.status(400).json({ errors: errors.array() });
+    }
 
-  if (id) {
-    const updated = await Leave.findByIdAndUpdate(id, data, { new: true });
-    return res.status(201).json(updated);
+    const { id, ...data } = req.body;
+
+    if (id) {
+      const updated = await Leave.findByIdAndUpdate(id, data, { new: true });
+      return res.status(201).json(updated);
+    }
+
+    const leave = new Leave(data);
+    await leave.save();
+    res.status(201).json(leave);
   }
-
-  const leave = new Leave(data);
-  await leave.save();
-  res.status(201).json(leave);
-});
+);
 
 export default router;
