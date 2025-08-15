@@ -1,5 +1,13 @@
+/**
+ * Mini readme: Leave routes
+ * ------------------------
+ * Provides endpoints for listing and managing leave requests. All routes
+ * enforce authentication through the shared auth middleware. The GET handler
+ * returns either all leave entries (for administrators and team admins) or
+ * only the authenticated user's records.
+ */
 import { Router } from 'express';
-import { authMiddleware, requireRole } from '../middleware/authMiddleware';
+import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
 import { Leave } from '../models/leave';
 
 const router = Router();
@@ -8,8 +16,24 @@ const router = Router();
 router.use(authMiddleware);
 
 // List leaves
-router.get('/', async (_, res) => {
-  const list = await Leave.find().exec();
+router.get('/', async (req: AuthRequest, res) => {
+  // If authentication failed to populate a user object, forbid the request
+  if (!req.user) {
+    return res.status(403).json({ message: 'Forbidden' });
+  }
+
+  const { id, role } = req.user;
+
+  // Administrators and team admins can view all leaves; other users only their own
+  const query = role === 'admin' || role === 'teamAdmin'
+    ? {}
+    : { userId: Number(id) };
+
+  const list = await Leave.find(query).exec();
+
+  // Debug logging aids troubleshooting while keeping production output minimal
+  console.debug('Leave query', { user: id, role, criteria: query });
+
   res.json(list);
 });
 
