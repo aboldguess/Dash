@@ -60,6 +60,8 @@ let activeTool = 'messages'; // currently selected tool
 // Track pagination state for message history
 let oldestMessageTimestamp = null;
 let loadingOlderMessages = false;
+// Threshold in ms after which recently offline users show as away
+const AWAY_THRESHOLD = 5 * 60 * 1000;
 
 /** Escape HTML special characters to mitigate XSS when using innerHTML. */
 function escapeHtml(str) {
@@ -589,10 +591,21 @@ function loadUsers() {
           if (u.username === currentUser.username) return; // skip self
           const li = document.createElement('li');
           li.dataset.user = u.username;
-          li.className = u.online ? 'user-online' : 'user-offline';
+          const lastSeen = u.lastSeen ? new Date(u.lastSeen) : null;
+          const statusClass = u.online
+            ? 'user-online'
+            : lastSeen && Date.now() - lastSeen.getTime() < AWAY_THRESHOLD
+            ? 'user-away'
+            : 'user-offline';
+          li.className = statusClass;
 
           const indicator = document.createElement('span');
           indicator.className = 'online-indicator';
+          indicator.title = u.online
+            ? 'Online'
+            : lastSeen
+            ? `Last seen ${lastSeen.toLocaleString()}`
+            : 'Last seen: unknown';
           li.appendChild(indicator);
           li.appendChild(document.createTextNode(u.username));
 
@@ -654,10 +667,26 @@ function clearUnread(user) {
 }
 
 // Update the displayed online status for a single user
-function handlePresence(name, online) {
+function handlePresence(name, online, lastSeen) {
   const item = document.querySelector(`#userList li[data-user="${name}"]`);
   if (item) {
-    item.className = online ? 'user-online' : 'user-offline';
+    const indicator = item.querySelector('.online-indicator');
+    if (online) {
+      item.className = 'user-online';
+      if (indicator) indicator.title = 'Online';
+    } else {
+      const seenDate = lastSeen ? new Date(lastSeen) : null;
+      const status =
+        seenDate && Date.now() - seenDate.getTime() < AWAY_THRESHOLD
+          ? 'user-away'
+          : 'user-offline';
+      item.className = status;
+      if (indicator) {
+        indicator.title = seenDate
+          ? `Last seen ${seenDate.toLocaleString()}`
+          : 'Last seen: unknown';
+      }
+    }
   }
 }
 
@@ -731,8 +760,8 @@ function checkAuth(initDashboard = false) {
         loadUnreadCounts();
       });
       // Update presence indicators in real time
-      socket.on('userOnline', name => handlePresence(name, true));
-      socket.on('userOffline', name => handlePresence(name, false));
+      socket.on('userOnline', data => handlePresence(data.username, true));
+      socket.on('userOffline', data => handlePresence(data.username, false, data.lastSeen));
       // Default to messaging view once authenticated
       selectTool('messages');
     });

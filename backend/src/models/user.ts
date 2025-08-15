@@ -17,6 +17,8 @@ export interface IUser extends Document {
   following: Types.ObjectId[];
   /** Users that follow this account */
   followers: Types.ObjectId[];
+  /** Timestamp of when the user was last connected */
+  lastSeen?: Date;
 }
 
 const UserSchema = new Schema<IUser>({
@@ -28,7 +30,9 @@ const UserSchema = new Schema<IUser>({
   allowedContacts: [{ type: Schema.Types.ObjectId, ref: 'User' }],
   // Social relationships
   following: [{ type: Schema.Types.ObjectId, ref: 'User' }],
-  followers: [{ type: Schema.Types.ObjectId, ref: 'User' }]
+  followers: [{ type: Schema.Types.ObjectId, ref: 'User' }],
+  // Recorded whenever the user disconnects so clients can display last seen
+  lastSeen: { type: Date }
 });
 
 export const User = model<IUser>('User', UserSchema);

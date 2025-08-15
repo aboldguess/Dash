@@ -312,6 +312,14 @@ button:hover {
   background: #16a34a; /* green for online presence */
 }
 
+.user-away .online-indicator {
+  background: var(--color-accent); /* orange for away status */
+}
+
+.user-offline .online-indicator {
+  background: var(--color-muted); /* grey for offline users */
+}
+
 /* Layout for the admin dashboard */
 .admin-layout {
   display: flex;

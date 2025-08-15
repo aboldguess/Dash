@@ -38,6 +38,7 @@ import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
 import { seedUsers } from './seedUsers';
 import { userConnected, userDisconnected } from './presence';
+import { User } from './models/user';
 import { authMiddleware } from './middleware/authMiddleware';
 
 export const app = express();
@@ -109,7 +110,7 @@ io.on('connection', socket => {
     // Remember this user is currently online
     // Track presence for multi-tab support and broadcast status
     userConnected(username);
-    io.emit('userOnline', username);
+    io.emit('userOnline', { username });
   });
 
   // Remove the user from the presence list when they disconnect
@@ -119,7 +120,12 @@ io.on('connection', socket => {
       // Only emit offline when the last tab disconnects
       const stillOnline = userDisconnected(username);
       if (!stillOnline) {
-        io.emit('userOffline', username);
+        const lastSeen = new Date();
+        // Persist last seen timestamp for future sessions
+        User.updateOne({ username }, { lastSeen }).catch(err =>
+          console.error('Failed to update lastSeen', err)
+        );
+        io.emit('userOffline', { username, lastSeen });
       }
     }
   });
