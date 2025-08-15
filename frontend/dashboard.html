@@ -3,9 +3,10 @@
 <head>
   <!--
     Mini readme: User dashboard
-    Main authenticated area including messaging and business tools. Applies a
-    strict Content Security Policy and loads scripts/styles locally. All
-    interactions are wired up in app.js to avoid inline scripts.
+    Main authenticated area including messaging and business tools such as CRM,
+    projects, timesheets and leave requests. Applies a strict Content Security
+    Policy and loads scripts/styles locally. All interactions are wired up in
+    app.js to avoid inline scripts.
   -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -43,6 +44,7 @@
         <li id="tool-crm">CRM</li>
         <li id="tool-projects">Projects</li>
         <li id="tool-timesheets">TS</li>
+        <li id="tool-leave">Leave</li>
         <li id="tool-recruit">HR</li>
         <li id="tool-social">Social</li>
       </ul>
@@ -146,6 +148,26 @@
           <span id="timesheetStatus" class="status"></span>
         </form>
         <table class="admin-table" id="timesheetTable"></table>
+      </section>
+      <section id="leave" class="hidden">
+        <h2>Leave Requests</h2>
+        <p>Request time off and track approvals.</p>
+        <form id="leaveForm" class="card">
+          <input id="leaveId" type="hidden" />
+          <label for="leaveStart">Start Date:</label>
+          <input id="leaveStart" type="date" required />
+          <label for="leaveEnd">End Date:</label>
+          <input id="leaveEnd" type="date" required />
+          <label for="leaveStatus" id="leaveStatusLabel" class="hidden">Status:</label>
+          <select id="leaveStatus" class="hidden">
+            <option value="pending">Pending</option>
+            <option value="approved">Approved</option>
+            <option value="rejected">Rejected</option>
+          </select>
+          <button type="submit">Save</button>
+          <span id="leaveStatusMsg" class="status"></span>
+        </form>
+        <table class="admin-table" id="leaveTable"></table>
       </section>
       <section id="recruit" class="hidden">
         <h2>Recruitment</h2>

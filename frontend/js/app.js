@@ -3,7 +3,8 @@
  * ------------------
  * Handles login, real-time messaging and business tool helpers for the
  * dashboard pages. Structured as a collection of small functions grouped by
- * feature area (authentication, messaging, CRM, projects, etc.).
+ * feature area (authentication, messaging, CRM, projects, timesheets, leave
+ * requests and more).
  *
  * Security notes:
  *  - Authentication tokens are kept in sessionStorage to avoid long-term
@@ -123,6 +124,23 @@ function selectTool(tool) {
   if (tool === 'timesheets') {
     loadTimesheets();
     resetTimesheetForm();
+  }
+
+  if (tool === 'leave') {
+    loadLeaves();
+    resetLeaveForm();
+    // Only administrators can adjust the status field
+    const statusField = document.getElementById('leaveStatus');
+    const statusLabel = document.getElementById('leaveStatusLabel');
+    if (statusField && statusLabel) {
+      if (currentUser.role === 'admin') {
+        statusField.classList.remove('hidden');
+        statusLabel.classList.remove('hidden');
+      } else {
+        statusField.classList.add('hidden');
+        statusLabel.classList.add('hidden');
+      }
+    }
   }
 
   if (tool === 'social') {
@@ -344,6 +362,13 @@ document.addEventListener('DOMContentLoaded', () => {
       timesheetForm.addEventListener('submit', e => {
         e.preventDefault();
         saveTimesheet(e);
+      });
+
+    const leaveForm = document.getElementById('leaveForm');
+    if (leaveForm)
+      leaveForm.addEventListener('submit', e => {
+        e.preventDefault();
+        saveLeave(e);
       });
 
     const workPackageForm = document.getElementById('workPackageForm');
@@ -1313,6 +1338,123 @@ function saveTimesheet(e) {
     .catch(err => {
       status.textContent = err;
     });
+}
+
+// ----------------------- Leave helpers -----------------------
+
+let leaveCache = [];
+
+// Clear leave form inputs
+function resetLeaveForm() {
+  document.getElementById('leaveId').value = '';
+  document.getElementById('leaveStart').value = '';
+  document.getElementById('leaveEnd').value = '';
+  const statusField = document.getElementById('leaveStatus');
+  if (statusField) statusField.value = 'pending';
+}
+
+// Fetch leave records for the current user; admins see all
+function loadLeaves() {
+  console.debug('Loading leaves');
+  fetch(`${API_BASE_URL}/api/leaves`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(list => {
+      leaveCache = list;
+      renderLeaveTable(list);
+    });
+}
+
+// Render the leave request table
+function renderLeaveTable(list) {
+  const table = document.getElementById('leaveTable');
+  table.innerHTML = '';
+  const header = document.createElement('tr');
+  header.innerHTML =
+    currentUser.role === 'admin'
+      ? '<th>Start</th><th>End</th><th>Status</th><th></th>'
+      : '<th>Start</th><th>End</th><th>Status</th>';
+  table.appendChild(header);
+  list.forEach(l => addLeaveRow(l));
+}
+
+// Append a single leave row
+function addLeaveRow(l) {
+  const table = document.getElementById('leaveTable');
+  const row = document.createElement('tr');
+  const startStr = new Date(l.startDate).toLocaleDateString();
+  const endStr = new Date(l.endDate).toLocaleDateString();
+  const actions =
+    currentUser.role === 'admin'
+      ? `<button onclick="updateLeaveStatus('${l._id}','approved')">Approve</button>` +
+        `<button onclick="updateLeaveStatus('${l._id}','rejected')">Reject</button>` +
+        `<button onclick="editLeave('${l._id}')">Edit</button>`
+      : `<button onclick="editLeave('${l._id}')">Edit</button>`;
+  row.innerHTML =
+    currentUser.role === 'admin'
+      ? `<td>${escapeHtml(startStr)}</td><td>${escapeHtml(endStr)}</td><td>${escapeHtml(l.status)}</td><td>${actions}</td>`
+      : `<td>${escapeHtml(startStr)}</td><td>${escapeHtml(endStr)}</td><td>${escapeHtml(l.status)}</td>`;
+  table.appendChild(row);
+}
+
+// Populate the form for editing an existing leave request
+function editLeave(id) {
+  const l = leaveCache.find(t => t._id === id);
+  if (!l) return;
+  document.getElementById('leaveId').value = l._id;
+  document.getElementById('leaveStart').value = l.startDate.substr(0, 10);
+  document.getElementById('leaveEnd').value = l.endDate.substr(0, 10);
+  const statusField = document.getElementById('leaveStatus');
+  if (statusField) statusField.value = l.status;
+}
+
+// Submit a new or existing leave request to the server
+function saveLeave(e) {
+  e.preventDefault();
+  const status = document.getElementById('leaveStatusMsg');
+  status.textContent = 'Saving...';
+  const id = document.getElementById('leaveId').value;
+  const startDate = document.getElementById('leaveStart').value;
+  const endDate = document.getElementById('leaveEnd').value;
+  const statusVal = document.getElementById('leaveStatus').value;
+  const userId = currentUser.id;
+  const data = { id, userId, startDate, endDate };
+  if (currentUser.role === 'admin') data.status = statusVal;
+  console.debug('Saving leave', data);
+  fetch(`${API_BASE_URL}/api/leaves`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify(data)
+  })
+    .then(r =>
+      r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Failed to save'))
+    )
+    .then(() => {
+      resetLeaveForm();
+      loadLeaves();
+      status.textContent = 'Saved';
+      setTimeout(() => (status.textContent = ''), 2000);
+    })
+    .catch(err => {
+      status.textContent = err;
+    });
+}
+
+// Update leave status (admin only)
+function updateLeaveStatus(id, status) {
+  console.debug('Updating leave status', { id, status });
+  fetch(`${API_BASE_URL}/api/leaves`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ id, userId: currentUser.id, status })
+  }).then(() => loadLeaves());
 }
 
 // ----------------------- Social helpers -----------------------
