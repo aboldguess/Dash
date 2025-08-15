@@ -1,15 +1,27 @@
-import { Schema, model, Document, Types } from 'mongoose';
-
 /**
- * Timesheet Model
- * ----------------
- * Stores the number of hours a user logs for a specific calendar day.
+ * @file Timesheet model.
+ *
+ * Purpose
+ * -------
+ * Defines how a user's daily logged hours are stored in MongoDB.
  *
  * Structure
- *  - `ITimesheet` interface describing the TypeScript shape.
- *  - `TimesheetSchema` defining the MongoDB document schema.
- *  - `Timesheet` Mongoose model for database interactions.
+ * ---------
+ * - `ITimesheet` interface: TypeScript representation of a timesheet document.
+ * - `TimesheetSchema`: Mongoose schema describing the persisted fields.
+ * - `Timesheet` model: Mongoose model exposing CRUD helpers.
+ *
+ * Key Interactions
+ * ----------------
+ * - Utilised by `routes/timesheets.ts` for creating and retrieving records.
+ * - Depends on an active Mongoose connection configured in `db.ts`.
+ *
+ * Assumptions
+ * -----------
+ * - `DB_URI` environment variable is set to a reachable MongoDB instance.
+ * - The database connection is established before this model is imported.
  */
+import { Schema, model, Document, Types } from 'mongoose';
 export interface ITimesheet extends Document {
   user: Types.ObjectId; // reference to the user who logged the hours
   hours: number;        // number of hours worked

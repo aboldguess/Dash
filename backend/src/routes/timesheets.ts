@@ -1,11 +1,26 @@
 /**
- * Mini readme: Timesheet routes
- * -----------------------------
- * Exposes endpoints for listing and submitting timesheets. All routes are
- * protected by authentication middleware. The GET handler returns either all
- * timesheets (for admin roles) or only the authenticated user's entries.
- * The POST handler validates mandatory fields and allows admins to submit or
- * update timesheets on behalf of users.
+ * @file Timesheet routes.
+ *
+ * Purpose
+ * -------
+ * REST endpoints for listing and submitting timesheet records.
+ *
+ * Structure
+ * ---------
+ * - Initialise an Express router.
+ * - Apply authentication middleware to all routes.
+ * - `GET /`: list timesheets (admins see all, others only their own).
+ * - `POST /`: validate payload then create or update a record.
+ *
+ * Key Interactions
+ * ----------------
+ * - Uses the `Timesheet` Mongoose model for database access.
+ * - Relies on `authMiddleware` and `requireRole` for JWT validation and role checks.
+ *
+ * Assumptions
+ * -----------
+ * - `JWT_SECRET` environment variable is set for token verification.
+ * - `DB_URI` environment variable provides connectivity to MongoDB.
  */
 import { Router, Response } from 'express';
 // express-validator provides declarative request validation helpers
