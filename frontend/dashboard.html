@@ -134,7 +134,18 @@
       </section>
       <section id="timesheets" class="hidden">
         <h2>Timesheets</h2>
-        <p>Timesheets functionality coming soon.</p>
+        <!-- Timesheet logging form and entries table -->
+        <p>Record the hours you worked for a specific date.</p>
+        <form id="timesheetForm" class="card">
+          <input id="sheetId" type="hidden" />
+          <label for="sheetDate">Date:</label>
+          <input id="sheetDate" type="date" required />
+          <label for="sheetHours">Hours:</label>
+          <input id="sheetHours" type="number" min="0" step="0.25" placeholder="Hours" required />
+          <button type="submit">Save</button>
+          <span id="timesheetStatus" class="status"></span>
+        </form>
+        <table class="admin-table" id="timesheetTable"></table>
       </section>
       <section id="recruit" class="hidden">
         <h2>Recruitment</h2>

@@ -120,6 +120,11 @@ function selectTool(tool) {
     resetProjectForm();
   }
 
+  if (tool === 'timesheets') {
+    loadTimesheets();
+    resetTimesheetForm();
+  }
+
   if (tool === 'social') {
     loadPosts();
   }
@@ -178,6 +183,8 @@ function login() {
       sessionStorage.setItem('username', u.username);
       // Remember the role so pages can conditionally display admin features
       sessionStorage.setItem('role', u.role);
+      // Store the numeric user id so features like timesheets can reference it
+      sessionStorage.setItem('userId', u.id);
       // Store calculated gravatar URL so it can be reused on the dashboard
       sessionStorage.setItem('avatarUrl', getGravatarUrl(u.username));
 
@@ -330,6 +337,13 @@ document.addEventListener('DOMContentLoaded', () => {
       projectForm.addEventListener('submit', e => {
         e.preventDefault();
         saveProject(e);
+      });
+
+    const timesheetForm = document.getElementById('timesheetForm');
+    if (timesheetForm)
+      timesheetForm.addEventListener('submit', e => {
+        e.preventDefault();
+        saveTimesheet(e);
       });
 
     const workPackageForm = document.getElementById('workPackageForm');
@@ -726,6 +740,7 @@ function checkAuth(initDashboard = false) {
   const token = sessionStorage.getItem('token');
   const username = sessionStorage.getItem('username');
   const role = sessionStorage.getItem('role');
+  const id = sessionStorage.getItem('userId');
   if (!token || !username) {
     // Not authenticated - return to login page
     window.location.href = 'login.html';
@@ -736,7 +751,7 @@ function checkAuth(initDashboard = false) {
   const gravatar = sessionStorage.getItem('avatarUrl') || getGravatarUrl(username);
   // Store all relevant details for convenience in other functions. The
   // avatarUrl field will be updated later if a protected photo exists.
-  currentUser = { username, token, avatarUrl: gravatar, role };
+  currentUser = { id, username, token, avatarUrl: gravatar, role };
 
   // Populate the navbar avatar if present. If a profile photo exists it must
   // be fetched with authorization and converted to a blob URL for display.
@@ -1211,6 +1226,93 @@ function renderGantt(tasks) {
   } else {
     new Gantt(area, tasks);
   }
+}
+
+// ----------------------- Timesheet helpers -----------------------
+
+let timesheetCache = [];
+
+// Clear timesheet form inputs
+function resetTimesheetForm() {
+  document.getElementById('sheetId').value = '';
+  document.getElementById('sheetDate').value = '';
+  document.getElementById('sheetHours').value = '';
+}
+
+// Fetch all timesheets for the current user and render them
+function loadTimesheets() {
+  console.debug('Loading timesheets');
+  fetch(`${API_BASE_URL}/api/timesheets`, {
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  })
+    .then(r => r.json())
+    .then(list => {
+      timesheetCache = list;
+      renderTimesheetTable(list);
+    });
+}
+
+// Render the timesheet table
+function renderTimesheetTable(list) {
+  const table = document.getElementById('timesheetTable');
+  table.innerHTML = '';
+  const header = document.createElement('tr');
+  header.innerHTML = '<th>Date</th><th>Hours</th><th></th>';
+  table.appendChild(header);
+  list.forEach(s => addTimesheetRow(s));
+}
+
+// Append a single row to the timesheet table
+function addTimesheetRow(s) {
+  const table = document.getElementById('timesheetTable');
+  const row = document.createElement('tr');
+  const dateStr = new Date(s.date).toLocaleDateString();
+  row.innerHTML = `
+    <td>${escapeHtml(dateStr)}</td>
+    <td>${escapeHtml(String(s.hours))}</td>
+    <td><button onclick="editTimesheet('${s._id}')">Edit</button></td>`;
+  table.appendChild(row);
+}
+
+// Populate the form for editing an existing timesheet
+function editTimesheet(id) {
+  const sheet = timesheetCache.find(t => t._id === id);
+  if (!sheet) return;
+  document.getElementById('sheetId').value = sheet._id;
+  document.getElementById('sheetDate').value = sheet.date.substr(0, 10);
+  document.getElementById('sheetHours').value = sheet.hours;
+}
+
+// Submit a new or existing timesheet to the server
+function saveTimesheet(e) {
+  e.preventDefault();
+  const status = document.getElementById('timesheetStatus');
+  status.textContent = 'Saving...';
+  const id = document.getElementById('sheetId').value;
+  const date = document.getElementById('sheetDate').value;
+  const hours = document.getElementById('sheetHours').value;
+  const userId = currentUser.id;
+  console.debug('Saving timesheet', { id, date, hours });
+  fetch(`${API_BASE_URL}/api/timesheets`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify({ id, userId, date, hours })
+  })
+    .then(r =>
+      r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Failed to save'))
+    )
+    .then(() => {
+      resetTimesheetForm();
+      loadTimesheets();
+      status.textContent = 'Saved';
+      setTimeout(() => (status.textContent = ''), 2000);
+    })
+    .catch(err => {
+      status.textContent = err;
+    });
 }
 
 // ----------------------- Social helpers -----------------------
