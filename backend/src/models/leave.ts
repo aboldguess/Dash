@@ -1,19 +1,26 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 /**
- * Leave request record.
+ * Leave Model
+ * -----------
+ * Represents a request by a user to take leave within a specific date range.
+ *
+ * Structure
+ *  - `ILeave` interface for TypeScript consumers.
+ *  - `LeaveSchema` defining the MongoDB schema.
+ *  - `Leave` Mongoose model used for database operations.
  */
 export interface ILeave extends Document {
-  userId: number;
-  startDate: string;
-  endDate: string;
-  status: 'pending' | 'approved' | 'rejected';
+  user: Types.ObjectId;          // reference to the requesting user
+  startDate: Date;               // first day of leave
+  endDate: Date;                 // last day of leave
+  status: 'pending' | 'approved' | 'rejected'; // approval status
 }
 
 const LeaveSchema = new Schema<ILeave>({
-  userId: { type: Number, required: true },
-  startDate: { type: String, required: true },
-  endDate: { type: String, required: true },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+  startDate: { type: Date, required: true },
+  endDate: { type: Date, required: true },
   status: {
     type: String,
     enum: ['pending', 'approved', 'rejected'],

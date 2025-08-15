@@ -1,18 +1,25 @@
-import { Schema, model, Document } from 'mongoose';
+import { Schema, model, Document, Types } from 'mongoose';
 
 /**
- * Hours logged by a user for a specific date.
+ * Timesheet Model
+ * ----------------
+ * Stores the number of hours a user logs for a specific calendar day.
+ *
+ * Structure
+ *  - `ITimesheet` interface describing the TypeScript shape.
+ *  - `TimesheetSchema` defining the MongoDB document schema.
+ *  - `Timesheet` Mongoose model for database interactions.
  */
 export interface ITimesheet extends Document {
-  userId: number;
-  hours: number;
-  date: string;
+  user: Types.ObjectId; // reference to the user who logged the hours
+  hours: number;        // number of hours worked
+  date: Date;           // date for which the hours are recorded
 }
 
 const TimesheetSchema = new Schema<ITimesheet>({
-  userId: { type: Number, required: true },
+  user: { type: Schema.Types.ObjectId, ref: 'User', required: true },
   hours: { type: Number, required: true },
-  date: { type: String, required: true }
+  date: { type: Date, required: true }
 });
 
 export const Timesheet = model<ITimesheet>('Timesheet', TimesheetSchema);
