@@ -57,7 +57,10 @@ async function loadProfile() {
     });
     if (!res.ok) throw new Error('Profile fetch failed');
     const profile = await res.json();
-    renderProfile(profile);
+    // If the user has not created a profile yet the API returns null. Use
+    // an empty object so the renderer can display editable placeholders
+    // instead of throwing an error.
+    renderProfile(profile || {});
   } catch (err) {
     console.error('loadProfile error', err);
     root.textContent = 'Could not load profile.';
@@ -65,7 +68,7 @@ async function loadProfile() {
 }
 
 /** Display read-only profile information and editing/upload controls. */
-function renderProfile(profile) {
+function renderProfile(profile = {}) {
   const root = document.getElementById('detailsRoot');
   root.innerHTML = '';
 
