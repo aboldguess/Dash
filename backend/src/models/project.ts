@@ -2,7 +2,10 @@ import { Schema, model, Document, Types } from 'mongoose';
 import { IWorkPackage, WorkPackage } from './workPackage';
 
 /**
- * Work project information including nested work packages and tasks.
+ * Mini readme: Project model
+ * -------------------------
+ * Represents a work project owned by a specific team. Projects contain nested
+ * work packages and tasks and track scheduling and cost information.
  */
 export interface IProject extends Document {
   name: string;
@@ -14,6 +17,7 @@ export interface IProject extends Document {
   cost: number;
   billable: boolean; // whether project time is billable
   status: 'todo' | 'in-progress' | 'done';
+  team: Types.ObjectId; // team that owns the project
   workPackages: Types.DocumentArray<IWorkPackage>;
 }
 
@@ -31,6 +35,7 @@ const ProjectSchema = new Schema<IProject>({
     enum: ['todo', 'in-progress', 'done'],
     default: 'todo'
   },
+  team: { type: Schema.Types.ObjectId, ref: 'Team', required: true },
   workPackages: [WorkPackage.schema]
 });
 
