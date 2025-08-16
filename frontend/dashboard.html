@@ -98,6 +98,7 @@
           <input id="projectEnd" type="date" />
           <input id="projectHours" type="number" placeholder="Hours" />
           <input id="projectCost" type="number" placeholder="£ Cost" />
+          <label><input id="projectBillable" type="checkbox" checked /> Billable</label>
           <textarea id="projectDesc" placeholder="Description"></textarea>
           <button type="submit">Save</button>
         </form>
@@ -141,10 +142,17 @@
         <p>Record the hours you worked for a specific date.</p>
         <form id="timesheetForm" class="card">
           <input id="sheetId" type="hidden" />
+          <label for="sheetProject">Project:</label>
+          <select id="sheetProject"></select>
+          <label for="sheetWp">Work Package:</label>
+          <select id="sheetWp"></select>
+          <label for="sheetTask">Task:</label>
+          <select id="sheetTask"></select>
           <label for="sheetDate">Date:</label>
           <input id="sheetDate" type="date" required />
           <label for="sheetHours">Hours:</label>
           <input id="sheetHours" type="number" min="0" step="0.25" placeholder="Hours" required />
+          <label><input id="sheetBillable" type="checkbox" checked /> Billable</label>
           <button type="submit">Save</button>
           <span id="timesheetStatus" class="status"></span>
         </form>

@@ -25,12 +25,14 @@ import { connectDB } from '../src/db';
 import { User } from '../src/models/user';
 import { Team } from '../src/models/team';
 import { Timesheet } from '../src/models/timesheet';
+import { Project } from '../src/models/project';
 
 describe('timesheet routes', () => {
   let mongo: MongoMemoryServer;
   let adminToken: string;
   let userToken: string;
   let regularUser: any;
+  let project: any;
 
   beforeAll(async () => {
     // Boot an in-memory MongoDB instance and connect Mongoose to it
@@ -44,14 +46,17 @@ describe('timesheet routes', () => {
     const admin = await new User({ username: 'admin@test.com', password: hashed, role: 'admin', team }).save();
     regularUser = await new User({ username: 'user@test.com', password: hashed, role: 'user', team }).save();
 
+    // Create a sample project to reference in timesheets
+    project = await new Project({ name: 'Alpha', owner: 'admin@test.com', billable: true }).save();
+
     // Generate JWTs for both users
     adminToken = jwt.sign(
-      { id: admin.id, username: admin.username, role: admin.role, team: team.id },
+      { id: 99, username: admin.username, role: admin.role, team: team.id },
       process.env.JWT_SECRET!,
       { expiresIn: '1h' }
     );
     userToken = jwt.sign(
-      { id: regularUser.id, username: regularUser.username, role: regularUser.role, team: team.id },
+      { id: 1, username: regularUser.username, role: regularUser.role, team: team.id },
       process.env.JWT_SECRET!,
       { expiresIn: '1h' }
     );
@@ -67,7 +72,7 @@ describe('timesheet routes', () => {
       .post('/api/timesheets')
       .set('Authorization', `Bearer ${adminToken}`)
       // Include both userId for route validation and user ObjectId for the model
-      .send({ userId: 1, user: regularUser._id, hours: 8, date: '2024-01-01' });
+      .send({ userId: 1, user: regularUser._id, project: project._id, hours: 8, date: '2024-01-01' });
     console.debug('Created timesheet', create.body);
     expect(create.status).toBe(201);
     expect(create.body).toHaveProperty('_id');
@@ -75,7 +80,7 @@ describe('timesheet routes', () => {
     const update = await request(app)
       .post('/api/timesheets')
       .set('Authorization', `Bearer ${adminToken}`)
-      .send({ id: create.body._id, userId: 1, user: regularUser._id, hours: 6, date: '2024-01-01' });
+      .send({ id: create.body._id, userId: 1, user: regularUser._id, project: project._id, hours: 6, date: '2024-01-01' });
     console.debug('Updated timesheet', update.body);
     expect(update.status).toBe(201);
     expect(update.body.hours).toBe(6);
@@ -94,17 +99,17 @@ describe('timesheet routes', () => {
       .set('Authorization', `Bearer ${userToken}`);
     console.debug('User list', userList.body);
     expect(userList.status).toBe(200);
-    // Regular users should not see other users' timesheets
-    expect(userList.body.length).toBe(0);
+    // Regular users should only see their own timesheets
+    expect(userList.body.length).toBe(1);
   });
 
-  test('regular user cannot create a timesheet', async () => {
+  test('regular user can create a timesheet for themselves', async () => {
     const res = await request(app)
       .post('/api/timesheets')
       .set('Authorization', `Bearer ${userToken}`)
-      .send({ userId: 1, user: regularUser._id, hours: 5, date: '2024-01-02' });
+      .send({ userId: 1, user: regularUser._id, project: project._id, hours: 5, date: '2024-01-02' });
     console.debug('User create attempt', { status: res.status });
-    expect(res.status).toBe(403);
+    expect(res.status).toBe(201);
   });
 });
 

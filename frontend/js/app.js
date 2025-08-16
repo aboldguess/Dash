@@ -61,6 +61,8 @@ let activeTool = 'messages'; // currently selected tool
 // Track pagination state for message history
 let oldestMessageTimestamp = null;
 let loadingOlderMessages = false;
+// Cached project list used by timesheet selectors
+let projectCache = [];
 // Threshold in ms after which recently offline users show as away
 const AWAY_THRESHOLD = 5 * 60 * 1000;
 
@@ -122,8 +124,10 @@ function selectTool(tool) {
   }
 
   if (tool === 'timesheets') {
-    loadTimesheets();
-    resetTimesheetForm();
+    loadProjects().then(() => {
+      loadTimesheets();
+      resetTimesheetForm();
+    });
   }
 
   if (tool === 'leave') {
@@ -362,6 +366,18 @@ document.addEventListener('DOMContentLoaded', () => {
       timesheetForm.addEventListener('submit', e => {
         e.preventDefault();
         saveTimesheet(e);
+      });
+
+    const sheetProject = document.getElementById('sheetProject');
+    if (sheetProject)
+      sheetProject.addEventListener('change', e => {
+        populateTimesheetWorkPackages(e.target.value);
+      });
+
+    const sheetWp = document.getElementById('sheetWp');
+    if (sheetWp)
+      sheetWp.addEventListener('change', e => {
+        populateTimesheetTasks(sheetProject.value, e.target.value);
       });
 
     const leaveForm = document.getElementById('leaveForm');
@@ -984,6 +1000,7 @@ function resetProjectForm() {
   document.getElementById('projectHours').value = '';
   document.getElementById('projectCost').value = '';
   document.getElementById('projectDesc').value = '';
+  document.getElementById('projectBillable').checked = true;
   document.getElementById('workPackageSection').classList.add('hidden');
   resetWorkPackageForm();
   resetTaskForm();
@@ -991,11 +1008,12 @@ function resetProjectForm() {
 
 // Retrieve all projects and render them along with a simple Gantt chart
 function loadProjects() {
-  fetch(`${API_BASE_URL}/api/projects`, {
+  return fetch(`${API_BASE_URL}/api/projects`, {
     headers: { Authorization: `Bearer ${currentUser.token}` }
   })
     .then(r => r.json())
     .then(list => {
+      projectCache = list;
       const table = document.getElementById('projectTable');
       table.innerHTML = '';
       const header = document.createElement('tr');
@@ -1026,6 +1044,7 @@ function loadProjects() {
       });
 
       renderGantt(tasks);
+      populateTimesheetProjects();
     });
 }
 
@@ -1043,6 +1062,7 @@ function editProject(id) {
       document.getElementById('projectEnd').value = p.end ? p.end.substr(0,10) : '';
       document.getElementById('projectHours').value = p.hours || '';
       document.getElementById('projectCost').value = p.cost || '';
+      document.getElementById('projectBillable').checked = p.billable !== false;
       document.getElementById('projectDesc').value = p.description || '';
       loadWorkPackages(p._id);
     });
@@ -1058,6 +1078,7 @@ function saveProject(e) {
   const end = document.getElementById('projectEnd').value;
   const hours = document.getElementById('projectHours').value;
   const cost = document.getElementById('projectCost').value;
+  const billable = document.getElementById('projectBillable').checked;
   const description = document.getElementById('projectDesc').value;
   fetch(`${API_BASE_URL}/api/projects`, {
     method: 'POST',
@@ -1065,7 +1086,7 @@ function saveProject(e) {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${currentUser.token}`
     },
-    body: JSON.stringify({ id, name, owner, start, end, hours, cost, description })
+    body: JSON.stringify({ id, name, owner, start, end, hours, cost, billable, description })
   }).then(() => {
     resetProjectForm();
     loadProjects();
@@ -1257,11 +1278,64 @@ function renderGantt(tasks) {
 
 let timesheetCache = [];
 
+// Populate the project dropdown in the timesheet form
+function populateTimesheetProjects() {
+  const select = document.getElementById('sheetProject');
+  if (!select) return;
+  select.innerHTML = '<option value="">Select project</option>';
+  projectCache.forEach(p => {
+    const opt = document.createElement('option');
+    opt.value = p._id;
+    opt.textContent = p.name;
+    select.appendChild(opt);
+  });
+}
+
+// Populate work packages based on selected project
+function populateTimesheetWorkPackages(projectId) {
+  const wpSelect = document.getElementById('sheetWp');
+  const taskSelect = document.getElementById('sheetTask');
+  wpSelect.innerHTML = '';
+  taskSelect.innerHTML = '';
+  const proj = projectCache.find(p => p._id === projectId);
+  if (!proj) return;
+  // Update billable checkbox based on project settings
+  const billable = document.getElementById('sheetBillable');
+  if (billable) billable.checked = proj.billable !== false;
+  wpSelect.innerHTML = '<option value="">Select work package</option>';
+  proj.workPackages.forEach(wp => {
+    const opt = document.createElement('option');
+    opt.value = wp._id;
+    opt.textContent = wp.name;
+    wpSelect.appendChild(opt);
+  });
+}
+
+// Populate tasks based on selected work package
+function populateTimesheetTasks(projectId, wpId) {
+  const taskSelect = document.getElementById('sheetTask');
+  taskSelect.innerHTML = '';
+  const proj = projectCache.find(p => p._id === projectId);
+  const wp = proj?.workPackages.find(w => w._id === wpId);
+  if (!wp) return;
+  taskSelect.innerHTML = '<option value="">Select task</option>';
+  wp.tasks.forEach(t => {
+    const opt = document.createElement('option');
+    opt.value = t._id;
+    opt.textContent = t.name;
+    taskSelect.appendChild(opt);
+  });
+}
+
 // Clear timesheet form inputs
 function resetTimesheetForm() {
   document.getElementById('sheetId').value = '';
   document.getElementById('sheetDate').value = '';
   document.getElementById('sheetHours').value = '';
+  document.getElementById('sheetProject').selectedIndex = 0;
+  document.getElementById('sheetWp').innerHTML = '';
+  document.getElementById('sheetTask').innerHTML = '';
+  document.getElementById('sheetBillable').checked = true;
 }
 
 // Fetch all timesheets for the current user and render them
@@ -1282,7 +1356,7 @@ function renderTimesheetTable(list) {
   const table = document.getElementById('timesheetTable');
   table.innerHTML = '';
   const header = document.createElement('tr');
-  header.innerHTML = '<th>Date</th><th>Hours</th><th></th>';
+  header.innerHTML = '<th>Date</th><th>Project</th><th>Task</th><th>Hours</th><th>Billable</th><th></th>';
   table.appendChild(header);
   list.forEach(s => addTimesheetRow(s));
 }
@@ -1292,9 +1366,18 @@ function addTimesheetRow(s) {
   const table = document.getElementById('timesheetTable');
   const row = document.createElement('tr');
   const dateStr = new Date(s.date).toLocaleDateString();
+  const projectId = typeof s.project === 'object' ? s.project._id : s.project;
+  const wpId = typeof s.workPackage === 'object' ? s.workPackage._id : s.workPackage;
+  const taskId = typeof s.task === 'object' ? s.task._id : s.task;
+  const proj = projectCache.find(p => p._id === projectId);
+  const wp = proj?.workPackages?.find(w => w._id === wpId);
+  const task = wp?.tasks?.find(t => t._id === taskId);
   row.innerHTML = `
     <td>${escapeHtml(dateStr)}</td>
+    <td>${escapeHtml(proj ? proj.name : '')}</td>
+    <td>${escapeHtml(task ? task.name : '')}</td>
     <td>${escapeHtml(String(s.hours))}</td>
+    <td>${s.billable ? 'Yes' : 'No'}</td>
     <td><button onclick="editTimesheet('${s._id}')">Edit</button></td>`;
   table.appendChild(row);
 }
@@ -1306,6 +1389,15 @@ function editTimesheet(id) {
   document.getElementById('sheetId').value = sheet._id;
   document.getElementById('sheetDate').value = sheet.date.substr(0, 10);
   document.getElementById('sheetHours').value = sheet.hours;
+  const projectId = typeof sheet.project === 'object' ? sheet.project._id : sheet.project;
+  const wpId = typeof sheet.workPackage === 'object' ? sheet.workPackage._id : sheet.workPackage;
+  const taskId = typeof sheet.task === 'object' ? sheet.task._id : sheet.task;
+  document.getElementById('sheetProject').value = projectId || '';
+  populateTimesheetWorkPackages(projectId);
+  document.getElementById('sheetWp').value = wpId || '';
+  populateTimesheetTasks(projectId, wpId);
+  document.getElementById('sheetTask').value = taskId || '';
+  document.getElementById('sheetBillable').checked = sheet.billable;
 }
 
 // Submit a new or existing timesheet to the server
@@ -1317,14 +1409,18 @@ function saveTimesheet(e) {
   const date = document.getElementById('sheetDate').value;
   const hours = document.getElementById('sheetHours').value;
   const userId = currentUser.id;
-  console.debug('Saving timesheet', { id, date, hours });
+  const project = document.getElementById('sheetProject').value;
+  const workPackage = document.getElementById('sheetWp').value || null;
+  const task = document.getElementById('sheetTask').value || null;
+  const billable = document.getElementById('sheetBillable').checked;
+  console.debug('Saving timesheet', { id, date, hours, project, workPackage, task, billable });
   fetch(`${API_BASE_URL}/api/timesheets`, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
       Authorization: `Bearer ${currentUser.token}`
     },
-    body: JSON.stringify({ id, userId, date, hours })
+    body: JSON.stringify({ id, userId, project, workPackage, task, date, hours, billable })
   })
     .then(r =>
       r.ok ? r.json() : r.json().then(d => Promise.reject(d.message || 'Failed to save'))

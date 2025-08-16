@@ -27,6 +27,7 @@ import { Router, Response } from 'express';
 import { check, validationResult } from 'express-validator';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
 import { Timesheet } from '../models/timesheet';
+import { Project } from '../models/project';
 
 const router = Router();
 
@@ -43,11 +44,13 @@ router.get('/', async (req: AuthRequest, res: Response) => {
   const { id, role } = req.user;
 
   // Administrators can view all timesheets, everyone else only their own
-  const query = role === 'admin' || role === 'teamAdmin'
-    ? {}
-    : { userId: Number(id) };
+  let query: any = {};
+  if (role !== 'admin' && role !== 'teamAdmin') {
+    const numeric = Number(id);
+    query = Number.isNaN(numeric) ? { user: id } : { userId: numeric };
+  }
 
-  const list = await Timesheet.find(query).exec();
+  const list = await Timesheet.find(query).populate('project', 'name billable').exec();
 
   // Provide simple debug logging to aid troubleshooting
   console.debug('Timesheet query', { user: id, role, criteria: query });
@@ -58,12 +61,13 @@ router.get('/', async (req: AuthRequest, res: Response) => {
 // Submit or update a timesheet
 router.post(
   '/',
-  requireRole(['admin', 'teamAdmin']),
   [
     // Validate essential fields before processing the request
     check('userId').isNumeric().withMessage('userId must be numeric'),
+    check('project').isMongoId().withMessage('project must be a valid id'),
     check('hours').isFloat({ gt: 0 }).withMessage('hours must be a positive number'),
     check('date').isISO8601().withMessage('date must be a valid ISO 8601 date'),
+    check('billable').optional().isBoolean().withMessage('billable must be boolean'),
   ],
   async (req: AuthRequest, res: Response) => {
     const errors = validationResult(req);
@@ -74,6 +78,21 @@ router.post(
     }
 
     const { id, ...data } = req.body;
+
+    // Only admins can submit on behalf of others
+    if (req.user) {
+      const tokenId = Number(req.user.id);
+      const isAdmin = req.user.role === 'admin' || req.user.role === 'teamAdmin';
+      if (!isAdmin && tokenId !== Number(data.userId)) {
+        return res.status(403).json({ message: 'Forbidden' });
+      }
+    }
+
+    // Ensure referenced project exists to prevent orphaned timesheets
+    const proj = await Project.findById(data.project).exec();
+    if (!proj) {
+      return res.status(400).json({ message: 'Invalid project reference' });
+    }
 
     if (id) {
       const updated = await Timesheet.findByIdAndUpdate(id, data, { new: true });
