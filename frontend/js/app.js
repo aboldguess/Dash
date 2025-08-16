@@ -1193,7 +1193,34 @@ function editWorkPackage(projectId, wpId) {
       document.getElementById('wpEnd').value = wp.end ? wp.end.substr(0,10) : '';
       document.getElementById('wpHours').value = wp.hours || '';
       document.getElementById('wpCost').value = wp.cost || '';
-    });
+  });
+}
+
+/**
+ * Create a work package under the specified project.
+ * Returns the fetch() promise so callers can chain actions.
+ */
+function addWorkPackage(projectId, data) {
+  console.debug('Adding work package', { projectId, data });
+  return fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify(data)
+  });
+}
+
+/**
+ * Remove a work package from a project.
+ */
+function removeWorkPackage(projectId, wpId) {
+  console.debug('Removing work package', { projectId, wpId });
+  return fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  });
 }
 
 function saveWorkPackage(e) {
@@ -1208,30 +1235,30 @@ function saveWorkPackage(e) {
     hours: document.getElementById('wpHours').value,
     cost: document.getElementById('wpCost').value
   };
-  const url = id
-    ? `${API_BASE_URL}/api/projects/${projectId}/workpackages/${id}`
-    : `${API_BASE_URL}/api/projects/${projectId}/workpackages`;
-  const method = id ? 'PATCH' : 'POST';
-  fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${currentUser.token}`
-    },
-    body: JSON.stringify(data)
-  }).then(() => {
-    resetWorkPackageForm();
-    loadWorkPackages(projectId);
-  });
+  if (id) {
+    fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${currentUser.token}`
+      },
+      body: JSON.stringify(data)
+    }).then(() => {
+      resetWorkPackageForm();
+      loadWorkPackages(projectId);
+    });
+  } else {
+    addWorkPackage(projectId, data).then(() => {
+      resetWorkPackageForm();
+      loadWorkPackages(projectId);
+    });
+  }
 }
 
 // Remove a work package after confirmation
 function deleteWorkPackage(projectId, wpId) {
   if (!confirm('Delete this work package?')) return;
-  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${currentUser.token}` }
-  }).then(() => loadWorkPackages(projectId));
+  removeWorkPackage(projectId, wpId).then(() => loadWorkPackages(projectId));
 }
 
 // Show empty task form for creating a new task under a work package
@@ -1261,13 +1288,36 @@ function editTask(projectId, wpId, taskId) {
     });
 }
 
+/**
+ * Add a task to a work package.
+ */
+function addTask(projectId, wpId, data) {
+  console.debug('Adding task', { projectId, wpId, data });
+  return fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks`, {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: `Bearer ${currentUser.token}`
+    },
+    body: JSON.stringify(data)
+  });
+}
+
+/**
+ * Remove a task from a work package.
+ */
+function removeTask(projectId, wpId, taskId) {
+  console.debug('Removing task', { projectId, wpId, taskId });
+  return fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${taskId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  });
+}
+
 // Delete a task from a work package
 function deleteTask(projectId, wpId, taskId) {
   if (!confirm('Delete this task?')) return;
-  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${taskId}`, {
-    method: 'DELETE',
-    headers: { Authorization: `Bearer ${currentUser.token}` }
-  }).then(() => loadWorkPackages(projectId));
+  removeTask(projectId, wpId, taskId).then(() => loadWorkPackages(projectId));
 }
 
 function saveTask(e) {
@@ -1283,22 +1333,26 @@ function saveTask(e) {
     hours: document.getElementById('taskHours').value,
     cost: document.getElementById('taskCost').value
   };
-  const url = id
-    ? `${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${id}`
-    : `${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks`;
-  const method = id ? 'PATCH' : 'POST';
-  fetch(url, {
-    method,
-    headers: {
-      'Content-Type': 'application/json',
-      Authorization: `Bearer ${currentUser.token}`
-    },
-    body: JSON.stringify(data)
-  }).then(() => {
-    resetTaskForm();
-    loadWorkPackages(projectId);
-    loadProjects();
-  });
+  if (id) {
+    fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${id}`, {
+      method: 'PATCH',
+      headers: {
+        'Content-Type': 'application/json',
+        Authorization: `Bearer ${currentUser.token}`
+      },
+      body: JSON.stringify(data)
+    }).then(() => {
+      resetTaskForm();
+      loadWorkPackages(projectId);
+      loadProjects();
+    });
+  } else {
+    addTask(projectId, wpId, data).then(() => {
+      resetTaskForm();
+      loadWorkPackages(projectId);
+      loadProjects();
+    });
+  }
 }
 
 // Basic gantt rendering using the frappe-gantt library
