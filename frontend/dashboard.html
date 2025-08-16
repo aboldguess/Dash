@@ -90,51 +90,8 @@
       </section>
       <section id="projects" class="hidden">
         <h2>Projects</h2>
-        <form id="projectForm" class="card">
-          <input id="projectId" type="hidden" />
-          <input id="projectName" placeholder="Project name" required />
-          <input id="projectOwner" placeholder="Owner" required />
-          <input id="projectStart" type="date" />
-          <input id="projectEnd" type="date" />
-          <input id="projectHours" type="number" placeholder="Hours" />
-          <input id="projectCost" type="number" placeholder="£ Cost" />
-          <label><input id="projectBillable" type="checkbox" checked /> Billable</label>
-          <textarea id="projectDesc" placeholder="Description"></textarea>
-          <button type="submit">Save</button>
-        </form>
-
-        <div id="workPackageSection" class="hidden">
-          <h3>Work Packages</h3>
-          <form id="workPackageForm" class="card">
-            <input id="wpProject" type="hidden" />
-            <input id="wpId" type="hidden" />
-            <input id="wpName" placeholder="Work package name" required />
-            <input id="wpOwner" placeholder="Owner" />
-            <input id="wpStart" type="date" />
-            <input id="wpEnd" type="date" />
-            <input id="wpHours" type="number" placeholder="Hours" />
-            <input id="wpCost" type="number" placeholder="£ Cost" />
-            <button type="submit">Save Work Package</button>
-          </form>
-          <table class="admin-table" id="workPackageTable"></table>
-
-          <h4>Tasks</h4>
-          <form id="taskForm" class="card">
-            <input id="taskProject" type="hidden" />
-            <input id="taskWp" type="hidden" />
-            <input id="taskId" type="hidden" />
-            <input id="taskName" placeholder="Task name" required />
-            <input id="taskOwner" placeholder="Owner" />
-            <input id="taskStart" type="date" />
-            <input id="taskEnd" type="date" />
-            <input id="taskHours" type="number" placeholder="Hours" />
-            <input id="taskCost" type="number" placeholder="£ Cost" />
-            <button type="submit">Save Task</button>
-          </form>
-          <table class="admin-table" id="taskTable"></table>
-        </div>
-        <div id="gantt"></div>
         <table class="admin-table" id="projectTable"></table>
+        <button id="addProjectButton">Add New Project</button>
       </section>
       <section id="timesheets" class="hidden">
         <h2>Timesheets</h2>

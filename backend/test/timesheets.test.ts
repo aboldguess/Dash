@@ -47,7 +47,12 @@ describe('timesheet routes', () => {
     regularUser = await new User({ username: 'user@test.com', password: hashed, role: 'user', team }).save();
 
     // Create a sample project to reference in timesheets
-    project = await new Project({ name: 'Alpha', owner: 'admin@test.com', billable: true }).save();
+    project = await new Project({
+      name: 'Alpha',
+      owner: 'admin@test.com',
+      billable: true,
+      team: team._id
+    }).save();
 
     // Generate JWTs for both users
     adminToken = jwt.sign(

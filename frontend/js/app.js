@@ -120,7 +120,6 @@ function selectTool(tool) {
 
   if (tool === 'projects') {
     loadProjects();
-    resetProjectForm();
   }
 
   if (tool === 'timesheets') {
@@ -322,7 +321,8 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Dashboard-specific initialisation. All listeners are attached here to
   // satisfy the strict CSP which forbids inline event handlers.
-  if (document.getElementById('tool-messages')) {
+  const dashboardRoot = document.getElementById('tool-messages');
+  if (dashboardRoot) {
     document.querySelectorAll('.tool-sidebar li').forEach(li => {
       li.addEventListener('click', () => {
         const tool = li.id.replace('tool-', '');
@@ -354,13 +354,6 @@ document.addEventListener('DOMContentLoaded', () => {
         saveContact(e);
       });
 
-    const projectForm = document.getElementById('projectForm');
-    if (projectForm)
-      projectForm.addEventListener('submit', e => {
-        e.preventDefault();
-        saveProject(e);
-      });
-
     const timesheetForm = document.getElementById('timesheetForm');
     if (timesheetForm)
       timesheetForm.addEventListener('submit', e => {
@@ -387,20 +380,6 @@ document.addEventListener('DOMContentLoaded', () => {
         saveLeave(e);
       });
 
-    const workPackageForm = document.getElementById('workPackageForm');
-    if (workPackageForm)
-      workPackageForm.addEventListener('submit', e => {
-        e.preventDefault();
-        saveWorkPackage(e);
-      });
-
-    const taskForm = document.getElementById('taskForm');
-    if (taskForm)
-      taskForm.addEventListener('submit', e => {
-        e.preventDefault();
-        saveTask(e);
-      });
-
     const postForm = document.getElementById('postForm');
     if (postForm)
       postForm.addEventListener('submit', e => {
@@ -408,6 +387,33 @@ document.addEventListener('DOMContentLoaded', () => {
         savePost(e);
       });
   }
+
+  const projectForm = document.getElementById('projectForm');
+  if (projectForm)
+    projectForm.addEventListener('submit', e => {
+      e.preventDefault();
+      saveProject(e);
+    });
+
+  const workPackageForm = document.getElementById('workPackageForm');
+  if (workPackageForm)
+    workPackageForm.addEventListener('submit', e => {
+      e.preventDefault();
+      saveWorkPackage(e);
+    });
+
+  const taskForm = document.getElementById('taskForm');
+  if (taskForm)
+    taskForm.addEventListener('submit', e => {
+      e.preventDefault();
+      saveTask(e);
+    });
+
+  const addProjectBtn = document.getElementById('addProjectButton');
+  if (addProjectBtn)
+    addProjectBtn.addEventListener('click', () => {
+      window.location.href = 'project.html';
+    });
 });
 
 function sendMessage() {
@@ -1026,7 +1032,7 @@ function loadProjects() {
           <td>${escapeHtml(p.name)}</td>
           <td>${escapeHtml(p.owner)}</td>
           <td>${escapeHtml(p.status)}</td>
-          <td><button onclick="editProject('${p._id}')">Edit</button></td>`;
+          <td><a href="project.html?id=${p._id}">Edit</a> <button onclick="deleteProject('${p._id}')">Delete</button></td>`;
         table.appendChild(row);
         // Collect tasks for gantt chart
         if (p.workPackages) {
@@ -1043,7 +1049,9 @@ function loadProjects() {
         }
       });
 
-      renderGantt(tasks);
+      if (document.getElementById('gantt')) {
+        renderGantt(tasks);
+      }
       populateTimesheetProjects();
     });
 }
@@ -1089,8 +1097,19 @@ function saveProject(e) {
     body: JSON.stringify({ id, name, owner, start, end, hours, cost, billable, description })
   }).then(() => {
     resetProjectForm();
-    loadProjects();
+    if (document.getElementById('projectTable')) {
+      loadProjects();
+    }
   });
+}
+
+// Remove a project after confirmation
+function deleteProject(id) {
+  if (!confirm('Delete this project?')) return;
+  fetch(`${API_BASE_URL}/api/projects/${id}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  }).then(() => loadProjects());
 }
 
 // ----------------------- Work package helpers -----------------------

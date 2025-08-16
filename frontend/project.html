@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <!--
+    Mini readme: Project editor page
+    Provides full CRUD interface for a single project including nested work
+    packages and tasks. Accessible via links from the dashboard's Projects tab.
+    Use the `id` query parameter to edit an existing project or leave blank to
+    create a new one. Requires authentication and relies on app.js for API
+    interactions.
+  -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https:; connect-src 'self' ws:;">
+  <title>Project Editor - Dash</title>
+  <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+  <header>
+    <nav>
+      <a href="dashboard.html" class="wordmark">Dash</a>
+      <div class="profile">
+        <img id="navAvatar" class="avatar profile-button" alt="Profile menu" />
+        <ul id="profileMenu" class="profile-menu hidden">
+          <li><a href="manage-profiles.html">Manage Profiles</a></li>
+          <li><a href="learning-zone.html">Learning Zone</a></li>
+          <li><a href="view-profile.html?id=me">View Profile Page</a></li>
+          <li><a href="my-details.html">My Details</a></li>
+          <li><a href="subscription.html">Subscription Details</a></li>
+          <li id="manageUsersLink" class="hidden"><a href="admin.html">Manage Users</a></li>
+          <li><a href="#" id="logoutLink">Sign out</a></li>
+        </ul>
+      </div>
+    </nav>
+  </header>
+
+  <main class="content">
+    <h2>Project Details</h2>
+    <form id="projectForm" class="card">
+      <input id="projectId" type="hidden" />
+      <input id="projectName" placeholder="Project name" required />
+      <input id="projectOwner" placeholder="Owner" required />
+      <input id="projectStart" type="date" />
+      <input id="projectEnd" type="date" />
+      <input id="projectHours" type="number" placeholder="Hours" />
+      <input id="projectCost" type="number" placeholder="£ Cost" />
+      <label><input id="projectBillable" type="checkbox" checked /> Billable</label>
+      <textarea id="projectDesc" placeholder="Description"></textarea>
+      <button type="submit">Save Project</button>
+    </form>
+
+    <div id="workPackageSection" class="hidden">
+      <h3>Work Packages</h3>
+      <form id="workPackageForm" class="card">
+        <input id="wpProject" type="hidden" />
+        <input id="wpId" type="hidden" />
+        <input id="wpName" placeholder="Work package name" required />
+        <input id="wpOwner" placeholder="Owner" />
+        <input id="wpStart" type="date" />
+        <input id="wpEnd" type="date" />
+        <input id="wpHours" type="number" placeholder="Hours" />
+        <input id="wpCost" type="number" placeholder="£ Cost" />
+        <button type="submit">Save Work Package</button>
+      </form>
+      <table class="admin-table" id="workPackageTable"></table>
+
+      <h4>Tasks</h4>
+      <form id="taskForm" class="card">
+        <input id="taskProject" type="hidden" />
+        <input id="taskWp" type="hidden" />
+        <input id="taskId" type="hidden" />
+        <input id="taskName" placeholder="Task name" required />
+        <input id="taskOwner" placeholder="Owner" />
+        <input id="taskStart" type="date" />
+        <input id="taskEnd" type="date" />
+        <input id="taskHours" type="number" placeholder="Hours" />
+        <input id="taskCost" type="number" placeholder="£ Cost" />
+        <button type="submit">Save Task</button>
+      </form>
+      <table class="admin-table" id="taskTable"></table>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+  <script src="js/project-page.js"></script>
+</body>
+</html>
