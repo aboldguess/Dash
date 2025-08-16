@@ -12,6 +12,7 @@ export interface IProject extends Document {
   end: Date;
   hours: number;
   cost: number;
+  billable: boolean; // whether project time is billable
   status: 'todo' | 'in-progress' | 'done';
   workPackages: Types.DocumentArray<IWorkPackage>;
 }
@@ -24,6 +25,7 @@ const ProjectSchema = new Schema<IProject>({
   end: Date,
   hours: Number,
   cost: Number,
+  billable: { type: Boolean, default: true },
   status: {
     type: String,
     enum: ['todo', 'in-progress', 'done'],
