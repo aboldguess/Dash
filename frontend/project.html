@@ -3,11 +3,12 @@
 <head>
   <!--
     Mini readme: Project editor page
-    Provides full CRUD interface for a single project including nested work
-    packages and tasks. Accessible via links from the dashboard's Projects tab.
-    Use the `id` query parameter to edit an existing project or leave blank to
-    create a new one. Requires authentication and relies on app.js for API
-    interactions.
+    Provides full CRUD interface for a single project. Work packages are listed
+    beneath the project with inline CRUD controls and each work package shows
+    its tasks with their own CRUD buttons. Accessible via the dashboard's
+    Projects tab. Use the `id` query parameter to edit an existing project or
+    leave blank to create a new one. Requires authentication and relies on
+    app.js for API interactions.
   -->
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -63,10 +64,10 @@
         <input id="wpCost" type="number" placeholder="£ Cost" />
         <button type="submit">Save Work Package</button>
       </form>
-      <table class="admin-table" id="workPackageTable"></table>
 
-      <h4>Tasks</h4>
-      <form id="taskForm" class="card">
+      <div id="workPackageList"></div>
+
+      <form id="taskForm" class="card hidden">
         <input id="taskProject" type="hidden" />
         <input id="taskWp" type="hidden" />
         <input id="taskId" type="hidden" />
@@ -78,7 +79,6 @@
         <input id="taskCost" type="number" placeholder="£ Cost" />
         <button type="submit">Save Task</button>
       </form>
-      <table class="admin-table" id="taskTable"></table>
     </div>
   </main>
 

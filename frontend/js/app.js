@@ -1125,6 +1125,8 @@ function resetWorkPackageForm() {
 }
 
 function resetTaskForm() {
+  document.getElementById('taskProject').value = '';
+  document.getElementById('taskWp').value = '';
   document.getElementById('taskId').value = '';
   document.getElementById('taskName').value = '';
   document.getElementById('taskOwner').value = '';
@@ -1132,6 +1134,7 @@ function resetTaskForm() {
   document.getElementById('taskEnd').value = '';
   document.getElementById('taskHours').value = '';
   document.getElementById('taskCost').value = '';
+  document.getElementById('taskForm').classList.add('hidden');
 }
 
 function loadWorkPackages(projectId) {
@@ -1143,15 +1146,35 @@ function loadWorkPackages(projectId) {
   })
     .then(r => r.json())
     .then(list => {
-      const table = document.getElementById('workPackageTable');
-      table.innerHTML = '';
-      const header = document.createElement('tr');
-      header.innerHTML = '<th>Name</th><th>Owner</th><th></th>';
-      table.appendChild(header);
+      const container = document.getElementById('workPackageList');
+      container.innerHTML = '';
       list.forEach(wp => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${escapeHtml(wp.name)}</td><td>${escapeHtml(wp.owner || '')}</td><td><button onclick="editWorkPackage('${projectId}','${wp._id}')">Edit</button></td>`;
-        table.appendChild(row);
+        const card = document.createElement('div');
+        card.className = 'card';
+        const header = document.createElement('div');
+        header.innerHTML = `
+          <strong>${escapeHtml(wp.name)}</strong> ${escapeHtml(wp.owner || '')}
+          <button onclick="editWorkPackage('${projectId}','${wp._id}')">Edit</button>
+          <button onclick="deleteWorkPackage('${projectId}','${wp._id}')">Delete</button>
+          <button onclick="prepareNewTask('${projectId}','${wp._id}')">Add Task</button>`;
+        card.appendChild(header);
+
+        const table = document.createElement('table');
+        table.className = 'admin-table';
+        const tHead = document.createElement('tr');
+        tHead.innerHTML = '<th>Task</th><th>Owner</th><th></th>';
+        table.appendChild(tHead);
+        wp.tasks.forEach(t => {
+          const tRow = document.createElement('tr');
+          tRow.innerHTML = `
+            <td>${escapeHtml(t.name)}</td>
+            <td>${escapeHtml(t.owner || '')}</td>
+            <td><button onclick="editTask('${projectId}','${wp._id}','${t._id}')">Edit</button>
+                <button onclick="deleteTask('${projectId}','${wp._id}','${t._id}')">Delete</button></td>`;
+          table.appendChild(tRow);
+        });
+        card.appendChild(table);
+        container.appendChild(card);
       });
     });
 }
@@ -1170,8 +1193,6 @@ function editWorkPackage(projectId, wpId) {
       document.getElementById('wpEnd').value = wp.end ? wp.end.substr(0,10) : '';
       document.getElementById('wpHours').value = wp.hours || '';
       document.getElementById('wpCost').value = wp.cost || '';
-      document.getElementById('taskWp').value = wp._id;
-      loadTasks(projectId, wp._id);
     });
 }
 
@@ -1204,24 +1225,21 @@ function saveWorkPackage(e) {
   });
 }
 
-function loadTasks(projectId, wpId) {
-  document.getElementById('taskWp').value = wpId;
+// Remove a work package after confirmation
+function deleteWorkPackage(projectId, wpId) {
+  if (!confirm('Delete this work package?')) return;
   fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}`, {
+    method: 'DELETE',
     headers: { Authorization: `Bearer ${currentUser.token}` }
-  })
-    .then(r => r.json())
-    .then(wp => {
-      const table = document.getElementById('taskTable');
-      table.innerHTML = '';
-      const header = document.createElement('tr');
-      header.innerHTML = '<th>Name</th><th>Owner</th><th></th>';
-      table.appendChild(header);
-      wp.tasks.forEach(t => {
-        const row = document.createElement('tr');
-        row.innerHTML = `<td>${escapeHtml(t.name)}</td><td>${escapeHtml(t.owner || '')}</td><td><button onclick="editTask('${projectId}','${wpId}','${t._id}')">Edit</button></td>`;
-        table.appendChild(row);
-      });
-    });
+  }).then(() => loadWorkPackages(projectId));
+}
+
+// Show empty task form for creating a new task under a work package
+function prepareNewTask(projectId, wpId) {
+  resetTaskForm();
+  document.getElementById('taskProject').value = projectId;
+  document.getElementById('taskWp').value = wpId;
+  document.getElementById('taskForm').classList.remove('hidden');
 }
 
 function editTask(projectId, wpId, taskId) {
@@ -1239,7 +1257,17 @@ function editTask(projectId, wpId, taskId) {
       document.getElementById('taskEnd').value = t.end ? t.end.substr(0,10) : '';
       document.getElementById('taskHours').value = t.hours || '';
       document.getElementById('taskCost').value = t.cost || '';
+      document.getElementById('taskForm').classList.remove('hidden');
     });
+}
+
+// Delete a task from a work package
+function deleteTask(projectId, wpId, taskId) {
+  if (!confirm('Delete this task?')) return;
+  fetch(`${API_BASE_URL}/api/projects/${projectId}/workpackages/${wpId}/tasks/${taskId}`, {
+    method: 'DELETE',
+    headers: { Authorization: `Bearer ${currentUser.token}` }
+  }).then(() => loadWorkPackages(projectId));
 }
 
 function saveTask(e) {
@@ -1268,7 +1296,7 @@ function saveTask(e) {
     body: JSON.stringify(data)
   }).then(() => {
     resetTaskForm();
-    loadTasks(projectId, wpId);
+    loadWorkPackages(projectId);
     loadProjects();
   });
 }
