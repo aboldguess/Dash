@@ -3,8 +3,10 @@
  *
  * Allows authenticated users to retrieve and update their profile information
  * and upload a profile photo. Uploaded files are restricted to images and
- * stored on disk with their original extension preserved.
- */
+ * stored on disk with their original extension preserved. The `GET /me` route
+ * lazily creates a profile document for users who have not yet set one up so
+ * the client always receives a usable object.
+*/
 import { Router } from 'express';
 import multer from 'multer';
 import path from 'path';
@@ -39,9 +41,17 @@ const upload = multer({
   }
 });
 
-/** Fetch the logged in user's profile data. */
+/**
+ * Fetch the logged in user's profile data. If no profile exists yet a new
+ * document is created so the client always receives an object rather than
+ * `null`, avoiding unnecessary errors when rendering the page.
+ */
 router.get('/me', authMiddleware, async (req: AuthRequest, res) => {
-  const profile = await Profile.findOne({ user: req.user!.id }).exec();
+  let profile = await Profile.findOne({ user: req.user!.id }).exec();
+  if (!profile) {
+    profile = new Profile({ user: req.user!.id });
+    await profile.save();
+  }
   res.json(profile);
 });
 
