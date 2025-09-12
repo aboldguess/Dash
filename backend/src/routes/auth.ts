@@ -23,6 +23,7 @@ import { body, validationResult } from 'express-validator';
 import { User } from '../models/user';
 import { Team } from '../models/team';
 import { TeamInvitation } from '../models/teamInvitation';
+import { Plan } from '../models/plan';
 import { processPayment } from '../payments';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
@@ -102,7 +103,15 @@ router.post(
       // In addition to standard credentials the client may request creation of a
       // new team. `seats` specifies how many licenses to purchase and `plan`
       // represents the pricing tier (unused by the dummy payment handler).
-      const { username, password, teamId, token, teamName, seats = 5, plan = 'basic' } = req.body;
+      const {
+        username,
+        password,
+        teamId,
+        token,
+        teamName,
+        planId,
+        seats = 5
+      } = req.body;
 
       // Fail if the username already exists
       if (await User.exists({ username })) {
@@ -116,6 +125,7 @@ router.post(
       const seatCount = parseInt(seats, 10) || 5;
 
       let team;
+      let role: 'user' | 'teamAdmin' = 'user';
       // Use invitation token if provided
       if (token) {
         const invite = await TeamInvitation.findOne({ token, email: username }).exec();
@@ -132,15 +142,21 @@ router.post(
         // Directly specify a team by id
         team = await Team.findById(teamId).exec();
       } else if (teamName) {
-        // Creating a brand new team requires payment processing. This dummy
-        // implementation simply waits then logs the transaction. Replace
-        // `processPayment` with a real gateway later.
-        await processPayment(username, plan, seatCount);
-
-        // Create the team with the requested number of seats. Domain mapping
-        // can be added during onboarding but is omitted here for brevity.
-        team = new Team({ name: teamName, domains: [], seats: seatCount });
+        if (await Team.exists({ name: teamName })) {
+          return res.status(400).json({ message: 'Team name already in use' });
+        }
+        let plan;
+        if (planId) {
+          plan = await Plan.findById(planId).exec();
+          if (!plan) {
+            return res.status(400).json({ message: 'Invalid plan specified' });
+          }
+        }
+        const seatCountFinal = plan ? plan.maxTeamSize : seatCount;
+        await processPayment(username, plan ? plan.name : 'custom', seatCountFinal);
+        team = new Team({ name: teamName, domains: [], seats: seatCountFinal, plan: plan ? plan._id : undefined });
         await team.save();
+        role = 'teamAdmin';
       } else {
         // Fallback to domain based matching
         const parts = username.split('@');
@@ -162,7 +178,7 @@ router.post(
       const newUser = new User({
         username,
         password: hashed,
-        role: 'user',
+        role,
         team: team._id,
         allowedContacts: [],
         following: [],

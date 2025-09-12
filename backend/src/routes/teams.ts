@@ -1,9 +1,28 @@
+/**
+ * @fileoverview Team and membership routes.
+ *
+ * Mini-README
+ * ------------
+ * This router exposes endpoints used by team administrators to manage their
+ * workspace:
+ * - CRUD operations for teams
+ * - Invitation generation and membership listing
+ * - Role management and subscription plan selection
+ *
+ * Structure
+ * 1. Import dependencies and instantiate router with auth requirements.
+ * 2. Administrative team endpoints (list, create, retrieve, update).
+ * 3. Membership management including invitation, role promotion, and plan
+ *    selection with dummy payment processing.
+ */
 import { Router } from 'express';
 import crypto from 'crypto';
 import { Team } from '../models/team';
 import { TeamInvitation } from '../models/teamInvitation';
 import { User } from '../models/user';
+import { Plan } from '../models/plan';
 import { authMiddleware, requireRole, AuthRequest } from '../middleware/authMiddleware';
+import { processPayment } from '../payments';
 
 const router = Router();
 
@@ -66,6 +85,70 @@ router.get('/:id/members', requireRole(['teamAdmin', 'admin']), async (req, res)
 });
 
 /**
+ * Update a member's role within the team. Ensures at least one admin remains.
+ */
+router.patch('/:id/members/:userId/role', requireRole(['teamAdmin', 'admin']), async (req: AuthRequest, res) => {
+  const { role } = req.body;
+  const teamId = req.params.id;
+  if (!['user', 'teamAdmin'].includes(role)) {
+    return res.status(400).json({ message: 'Invalid role' });
+  }
+
+  if (req.user!.role === 'teamAdmin' && String(req.user!.team) !== teamId) {
+    return res.status(403).json({ message: 'Cannot modify another team' });
+  }
+
+  const member = await User.findOne({ _id: req.params.userId, team: teamId }).exec();
+  if (!member) {
+    return res.status(404).json({ message: 'User not found' });
+  }
+
+  if (member.role === 'teamAdmin' && role === 'user') {
+    const count = await User.countDocuments({ team: teamId, role: 'teamAdmin', _id: { $ne: member._id } });
+    if (count === 0) {
+      return res.status(400).json({ message: 'Team must have at least one admin' });
+    }
+  }
+
+  member.role = role;
+  await member.save();
+  res.json({ id: member._id, role: member.role });
+});
+
+/**
+ * Assign a subscription plan to the team. Payment processing is simulated.
+ */
+router.patch('/:id/plan', requireRole(['teamAdmin', 'admin']), async (req: AuthRequest, res) => {
+  const teamId = req.params.id;
+  const { planId } = req.body;
+
+  if (req.user!.role === 'teamAdmin' && String(req.user!.team) !== teamId) {
+    return res.status(403).json({ message: 'Cannot modify another team' });
+  }
+
+  const [team, plan] = await Promise.all([
+    Team.findById(teamId).exec(),
+    Plan.findById(planId).exec()
+  ]);
+
+  if (!team || !plan) {
+    return res.status(404).json({ message: 'Team or plan not found' });
+  }
+
+  if (team.seats > plan.maxTeamSize) {
+    return res.status(400).json({ message: 'Team exceeds selected plan size' });
+  }
+
+  await processPayment(req.user!.username, plan.name, plan.maxTeamSize);
+
+  team.plan = plan._id;
+  team.seats = plan.maxTeamSize;
+  await team.save();
+
+  res.json({ message: 'Plan updated', plan: plan.name });
+});
+
+/**
  * Create an invitation for a new member to join the team.
  */
 router.post('/:id/invites', requireRole(['teamAdmin', 'admin']), async (req, res) => {
@@ -85,7 +168,8 @@ router.post('/:id/invites', requireRole(['teamAdmin', 'admin']), async (req, res
   const token = crypto.randomBytes(16).toString('hex');
   const invite = new TeamInvitation({ email, team: team._id, token });
   await invite.save();
-  res.status(201).json(invite);
+  const signupUrl = `${process.env.APP_BASE_URL || ''}/signup?token=${token}`;
+  res.status(201).json({ ...invite.toObject(), signupUrl });
 });
 
 /**
