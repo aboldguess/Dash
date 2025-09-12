@@ -266,7 +266,13 @@ function signup() {
       if (contentType.includes('application/json')) {
         const data = JSON.parse(text);
         if (r.ok) return data;
-        throw new Error(data.message || 'Signup failed');
+        // Surface validation errors from the backend instead of a generic
+        // failure so users know which fields require attention. If multiple
+        // errors exist, join their messages into a single string.
+        const validationMsg = Array.isArray(data.errors)
+          ? data.errors.map(e => e.msg).join(', ')
+          : undefined;
+        throw new Error(data.message || validationMsg || 'Signup failed');
       }
       console.error('Unexpected response format', text);
       throw new Error('Unexpected response from server');
