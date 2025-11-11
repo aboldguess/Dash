@@ -12,7 +12,6 @@ import type { Request, Response, NextFunction } from 'express';
 import bodyParser from 'body-parser';
 import cors from 'cors';
 import helmet from 'helmet';
-import rateLimit from 'express-rate-limit';
 import path from 'path';
 import fs from 'fs';
 import http from 'http';
@@ -38,6 +37,7 @@ import { Message } from './models/message';
 import { DirectMessage } from './models/directMessage';
 import { seedUsers } from './seedUsers';
 import { userConnected, userDisconnected } from './presence';
+import { generalRateLimiter } from './middleware/rateLimiter';
 import { User } from './models/user';
 import { authMiddleware } from './middleware/authMiddleware';
 
@@ -167,8 +167,7 @@ io.on('connection', socket => {
 
 // Middleware configuration
 app.use(helmet());
-const limiter = rateLimit({ windowMs: 15 * 60 * 1000, max: 100 });
-app.use(limiter);
+app.use('/api', generalRateLimiter);
 app.use(
   cors({
     origin: (origin, callback) => {
