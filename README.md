@@ -190,3 +190,30 @@ After logging in, visit `/admin.html` to access the dashboard for managing confi
 ## Troubleshooting
 - If a start script fails, review `dash_windows_start.log` or `dash_rpi_start.log` for details.
 - When the backend cannot reach MongoDB it prints the connection URI it attempted, making configuration issues easier to spot.
+- Seeing `Too many requests, please try again later.` means the API rate limiter was triggered. Increase `GENERAL_RATE_LIMIT_MAX_REQUESTS`
+  or enlarge `GENERAL_RATE_LIMIT_WINDOW_MINUTES` in your environment configuration, then restart the backend.
+
+### Rate limiting configuration
+The backend ships with sensible defaults but allows full control over rate limiting through environment variables:
+
+| Variable | Purpose | Default |
+| --- | --- | --- |
+| `GENERAL_RATE_LIMIT_WINDOW_MINUTES` | Minutes in each window for general `/api` traffic. | `1` |
+| `GENERAL_RATE_LIMIT_MAX_REQUESTS` | Requests allowed per IP in each general window. | `600` |
+| `AUTH_RATE_LIMIT_WINDOW_MINUTES` | Minutes in each window for `/api/auth/login`. | `15` |
+| `AUTH_RATE_LIMIT_MAX_REQUESTS` | Login attempts allowed per IP before throttling. | `20` |
+
+Set the values in `backend/.env` or via your shell prior to starting the backend:
+
+```powershell
+# Windows PowerShell
+Add-Content -Path .\backend\.env -Value "GENERAL_RATE_LIMIT_MAX_REQUESTS=900"
+```
+
+```bash
+# Linux / Raspberry Pi
+echo "GENERAL_RATE_LIMIT_MAX_REQUESTS=900" >> ./backend/.env
+```
+
+Restart the backend after making changes so the new limits load. The server logs the effective configuration on boot, helping you
+verify your settings.

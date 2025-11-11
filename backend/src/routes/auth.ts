@@ -25,6 +25,7 @@ import { Team } from '../models/team';
 import { TeamInvitation } from '../models/teamInvitation';
 import { Plan } from '../models/plan';
 import { processPayment } from '../payments';
+import { authRateLimiter } from '../middleware/rateLimiter';
 
 const JWT_SECRET = process.env.JWT_SECRET as string;
 if (!JWT_SECRET) {
@@ -38,6 +39,7 @@ const router = Router();
 // unexpected failures surface cleanly and do not expose internals.
 router.post(
   '/login',
+  authRateLimiter,
   body('username').isString().trim().notEmpty(),
   body('password').isString().trim().notEmpty(),
   async (req, res, next) => {
