@@ -71,7 +71,34 @@ database instantly.
    - `--skip-install` if you have already run `npm install`.
    - `--init-db` to execute `npm run db:init` immediately after dependencies install (MongoDB must be running).
 
-The script logs every action to `./logs/manage-dash.log`, making debugging straightforward if something fails.
+   The script logs every action to `./logs/manage-dash.log`, making debugging straightforward if something fails.
+
+### 🔐 Manually setting `JWT_SECRET` (when skipping the helper script)
+
+If you launch the backend directly with `npm run dev --prefix backend` (or any command that bypasses `scripts/manage-dash.mjs`), you **must** ensure `backend/.env` contains a `JWT_SECRET`. Without it the server throws `Error: JWT_SECRET environment variable is required` during startup.
+
+1. Create the `.env` file (if it does not exist already):
+   - Windows PowerShell:
+     ```powershell
+     cd backend
+     New-Item -Path .env -ItemType File -Force | Out-Null
+     ```
+   - Linux / Raspberry Pi:
+     ```bash
+     cd backend
+     touch .env
+     ```
+2. Generate a strong secret using Node's crypto module (same command works everywhere):
+   ```bash
+   node -e "console.log(require('crypto').randomBytes(64).toString('hex'))"
+   ```
+3. Open `backend/.env` in your preferred editor and add/update the line:
+   ```
+   JWT_SECRET=<paste_the_value_from_step_2>
+   ```
+4. (Optional) Add any other configuration you need (e.g., `MONGODB_URI=...`). Save the file and restart the backend so the new environment variables load.
+
+> Tip: Keep `.env` files out of version control. Git already ignores `backend/.env`, so secrets remain local to your machine.
 
 ---
 
