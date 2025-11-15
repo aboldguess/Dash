@@ -30,6 +30,13 @@ After installation, verify versions:
   mongod --version
   ```
 
+If `mongod` is reported as "not recognized" (Windows) or "command not found"
+(*nix), install MongoDB Community Server from
+https://www.mongodb.com/try/download/community or use your package manager
+(`sudo apt install mongodb` on Debian/Ubuntu). Alternatively, start a container
+with `docker run -d --name mongo -p 27017:27017 mongo:6` to provision a local
+database instantly.
+
 ---
 
 ## 1. One-time project setup
@@ -55,6 +62,10 @@ After installation, verify versions:
      ```bash
      node scripts/manage-dash.mjs setup --db-uri "mongodb://localhost:27017/dash"
      ```
+
+   > Working inside `backend/`? Run the same command without changing folders:
+   > `node scripts/manage-dash.mjs ...`. A proxy script forwards to the root
+   > helper automatically.
 
    Advanced flags:
    - `--skip-install` if you have already run `npm install`.

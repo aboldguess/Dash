@@ -29,7 +29,7 @@
  *   auto-generates a secure JWT secret when missing or left as the placeholder.
  */
 
-import { spawn } from 'node:child_process';
+import { spawn, spawnSync } from 'node:child_process';
 import { existsSync, mkdirSync, readFileSync, writeFileSync, appendFileSync } from 'node:fs';
 import { fileURLToPath } from 'node:url';
 import { dirname, resolve } from 'node:path';
@@ -100,6 +100,45 @@ function runCommand(command, args, options = {}) {
       }
     });
   });
+}
+
+/**
+ * Probe for the MongoDB server binary and emit actionable guidance when it is missing.
+ *
+ * The setup script cannot install MongoDB automatically, so we surface an
+ * easy-to-follow message for Windows and Linux / Raspberry Pi users. Returning a
+ * boolean allows callers to decide whether the absence should be fatal or only a
+ * warning (for example when connecting to a remote cluster).
+ */
+function reportMongoBinaryPresence() {
+  const probe = spawnSync('mongod', ['--version'], {
+    shell: process.platform === 'win32',
+    env: process.env,
+    encoding: 'utf8'
+  });
+
+  if (probe.error || probe.status !== 0) {
+    log('MongoDB server binary (mongod) not detected on PATH.');
+    const windowsHelp = 'Install MongoDB Community Server from https://www.mongodb.com/try/download/community '
+      + 'or run "docker run -d --name mongo -p 27017:27017 mongo:6" via Docker Desktop.';
+    const linuxHelp = 'Install MongoDB using your package manager (e.g. "sudo apt install mongodb"), '
+      + 'or run "docker run -d --name mongo -p 27017:27017 mongo:6" if Docker is available.';
+    const guidance = process.platform === 'win32' ? windowsHelp : linuxHelp;
+    log(guidance);
+    return false;
+  }
+
+  const combinedOutput = `${probe.stdout}${probe.stderr}`;
+  const versionLine = combinedOutput
+    .split(/\r?\n/)
+    .map(line => line.trim())
+    .find(line => line.toLowerCase().includes('db version'));
+  if (versionLine) {
+    log(`Confirmed MongoDB availability: ${versionLine}`);
+  } else {
+    log('Confirmed MongoDB availability via "mongod --version".');
+  }
+  return true;
 }
 
 /** Parse CLI arguments into command + options. */
@@ -210,6 +249,10 @@ function upsertEnvValue(content, key, value) {
 
 async function handleSetup(options) {
   log('Starting Dash setup sequence.');
+  const hasMongo = reportMongoBinaryPresence();
+  if (!hasMongo) {
+    log('Continuing setup; database-dependent commands will fail until MongoDB is installed or an external cluster is configured.');
+  }
   ensureEnvConfig(options.dbUri);
   if (!options.skipInstall) {
     await runCommand('npm', ['install']);
@@ -224,6 +267,10 @@ async function handleSetup(options) {
 
 async function handleStart(options) {
   log(`Starting Dash backend in ${options.mode} mode.`);
+  const hasMongo = reportMongoBinaryPresence();
+  if (!hasMongo) {
+    log('Backend start will proceed, but expect connection failures unless DB_URI targets a reachable MongoDB instance.');
+  }
   ensureEnvConfig(options.dbUri);
   if (!options.skipInstall && !existsSync(resolve(ROOT_DIR, 'node_modules'))) {
     log('Node modules missing; installing before launch.');
